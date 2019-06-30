@@ -5,6 +5,7 @@
 - compare w/ asymmetric entropy
 - show basic sims / illustrations on why this would work
 - try on more dsets: simulations, mnist / fashion mnist
+- try for both nns and things like decision trees.
 
 ## basic idea
 
