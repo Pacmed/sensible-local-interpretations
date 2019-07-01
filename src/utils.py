@@ -110,12 +110,12 @@ def cross_entropy(y_true: np.array, y_score: np.array, n_labels: int = None,
     return ce
 
 
-def make_performance_uncertainty_plot(y_true: np.array,
+def get_performance_vs_uncertainty(y_true: np.array,
                                       y_pred: np.array,
                                       y_unc: np.array,
                                       y_axis_label: str,
                                       performance_fn: callable = cross_entropy,
-                                      performance_fn_args: dict = None) -> plt.figure:
+                                      performance_fn_args: dict = None):
     """Create plot how the uncertainty relates to model performance.
 
     Parameters
@@ -178,6 +178,41 @@ def make_performance_uncertainty_plot(y_true: np.array,
         performances.append(performance_fn(selected_labels, selected_predictions,
                                            **performance_fn_args))
 
+    return percentages, performances
+    
+
+
+def make_performance_uncertainty_plot(y_true: np.array,
+                                      y_pred: np.array,
+                                      y_unc: np.array,
+                                      y_axis_label: str,
+                                      performance_fn: callable = cross_entropy,
+                                      performance_fn_args: dict = None) -> plt.figure:
+    
+    """Create plot how the uncertainty relates to model performance.
+
+    Parameters
+    ----------
+    y_true: np.array
+        True labels
+    y_pred: np.array
+        Predictions
+    y_unc: np.array
+        Uncertainties
+    y_axis_label: str
+        plot Y-axis label
+    performance_fn: callable
+        Performance function used
+    performance_fn_args: dict
+        Arguments passed to performance function
+
+    Returns
+    -------
+    plt.figure
+        Plot
+    """
+    
+    percentages, performances = get_performance_vs_uncertainty(y_true, y_pred, y_unc, y_axis_label, performance_fn, performance_fn_args)
     fig = plt.figure()
     sns.lineplot(percentages, performances)
     plt.xlabel('% of Uncertain Data')
