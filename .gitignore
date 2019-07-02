@@ -12,5 +12,5 @@ env
 **.gif
 **.DS_Store
 **.idea
-data
 *.pth
+**Icon*
