@@ -1,0 +1,173 @@
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
+from copy import deepcopy
+import pandas as pd
+import time, sys, os
+
+cred = (234/255, 51/255, 86/255)
+cblue = (57/255, 138/255, 242/255)
+
+class Explainer():
+    
+    def __init__(self, X, feature_names=None, mode='classification'):
+        """Initialize the explainer.
+
+        Parameters
+        ----------
+        X : ndarray
+            Training data, used to properly sample the curves for the interpretation
+
+        """
+        self.X = X
+        self.feature_names = feature_names
+        self.mode = mode
+        
+    def explain_instance(self, x, pred_func, class_num=None, return_table=False):
+        """Explain the instance x.
+
+        Parameters
+        ----------
+        x : ndarray
+            Single data point to be explained
+        pred_func : func
+            Callable function which returns the model's prediction given x
+
+        Returns
+        -------
+        ndarray
+            Array of values same shape as x with importance score for each feature.
+        """
+        contribution_scores = []
+        sensitivity_pos_scores = []
+        sensitivity_neg_scores = []
+        for feature_num in range(x.size):
+            scores = self.explain_instance_feature_num(x, pred_func, feature_num, class_num)
+            contribution_scores.append(scores['contribution'])
+            sensitivity_pos_scores.append(scores['sensitivity_pos'])
+            sensitivity_neg_scores.append(scores['sensitivity_neg'])
+        
+        scores = {
+            'contribution_scores': contribution_scores, 
+            'sensitivity_pos_scores': sensitivity_pos_scores,
+            'sensitivity_neg_scores': sensitivity_neg_scores
+        }
+        
+        if return_table:
+            return pd.DataFrame(scores).sort_values(by='contribution_scores')
+        else:
+            return scores
+    
+        
+    def explain_instance_feature_num(self, x, pred_func, feature_num, class_num=None):
+        """Explain the instance x.
+
+        Parameters
+        ----------
+        x : ndarray (size num_features)
+            Single data point to be explained
+        pred_func : func
+            Callable function which returns the model's prediction given x
+        feature_num : int
+            Index for feature to be interpreted
+        class_num: int
+            If self.mode == 'classification', class_num is which class to interpret
+
+        Returns
+        -------
+        float
+            importance for feature_num
+        """
+        
+        # wrap function for classification
+        def f(x):
+            if self.mode == 'classification':
+                return pred_func(x)[:, 1]
+            else:
+                return pred_func(x)
+        
+        # calculate ice curve
+        x_grid, ice_grid = self.calc_ice_grid(x, f, feature_num)
+        
+        
+        # calculate contribution score
+        X_feat_samples = self.conditional_samples(x, feature_num)
+        pred_samples = f(X_feat_samples)
+        contribution = f(x) - np.mean(pred_samples)
+        
+        # calculate sensitivity score
+        sensitivity_pos, sensitivity_neg = self.calc_sensitivity(x, f, feature_num)
+        
+        plot_dict = {
+            'ice_plot': (x_grid, ice_grid),
+            'x_feat': x[:, feature_num],
+            'pred': f(x)
+        }
+        
+        scores_dict = {
+            'contribution': float(contribution),
+            'sensitivity_pos': float(sensitivity_pos),
+            'sensitivity_neg': float(sensitivity_neg)
+        }
+        
+        return {**plot_dict, **scores_dict}
+        
+    def calc_ice_grid(self, x, pred_func, feature_num, strategy='linspace', num_grid_points=100):
+        # get grid
+        X_new = np.repeat(x, num_grid_points, axis=0)    
+        X_col = self.X[:, feature_num]
+        if strategy == 'linspace':
+            X_new[:, feature_num] = np.linspace(X_col.min(), X_col.max(), num_grid_points)
+            
+        # return ice value on grid
+        return X_new[:, feature_num], pred_func(X_new)
+    
+    def conditional_samples(self, x, feature_num, num_samples=100, strategy='independent'): 
+        """Calculate conditional distr. to sample new feature_num values conditioned on this x
+        
+        """
+        # sample feature_num        
+        if strategy == 'independent':
+            num_samples = self.X.shape[0]
+            X_feat_samples = self.X[:num_samples, feature_num]
+            
+        # create copies of the data point with the sampled feature
+        X_new = np.repeat(x, num_samples, axis=0)
+        X_new[:, feature_num] = X_feat_samples
+        return X_new
+    
+    def calc_sensitivity(self, x, pred_func, feature_num, delta=1e-5):
+        '''Calculate sensitivity score
+        '''
+        yhat = pred_func(x)
+
+        x_plus = deepcopy(x)
+        x_plus[0, feature_num] += delta
+        yhat_plus = pred_func(x_plus)
+
+        x_minus = deepcopy(x)
+        x_minus[0, feature_num] -= delta
+        yhat_minus = pred_func(x_minus)
+        
+        return (yhat_plus - yhat) / delta, (yhat_minus - yhat) / delta
+    
+def viz_expl(expl_dict, delta_plot=0.05):
+    plt.plot(expl_dict['ice_plot'][0], expl_dict['ice_plot'][1], color='black')
+    x_f = expl_dict['x_feat']
+    yhat = expl_dict['pred']
+    plt.plot(x_f, yhat, 'o', color='black', ms=8)
+    def cs(score): return cblue if score > 0 else cred
+
+    plt.plot([x_f, x_f + delta_plot], 
+             [yhat, yhat + expl_dict['sensitivity_pos'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_pos']))
+    plt.plot([x_f, x_f - delta_plot], 
+             [yhat, yhat + expl_dict['sensitivity_neg'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_neg']))
+
+    plt.axhline(yhat - expl_dict['contribution'], color='gray', alpha=0.5, linestyle='--')
+    plt.plot([x_f, x_f], [yhat, yhat - expl_dict['contribution']], linestyle='--', color = cs(expl_dict['contribution']))
+
+    plt.xlabel('feature value')
+    plt.ylabel('model prediction')
+    plt.show()
+    
+    
