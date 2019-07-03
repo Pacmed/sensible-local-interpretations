@@ -54,7 +54,7 @@ class Explainer():
         }
         
         if return_table:
-            return pd.DataFrame(scores).sort_values(by='contribution_scores')
+            return pd.DataFrame(scores).sort_values(by='contribution_scores').round(decimals=3)
         else:
             return scores
     
@@ -113,6 +113,8 @@ class Explainer():
         return {**plot_dict, **scores_dict}
         
     def calc_ice_grid(self, x, pred_func, feature_num, strategy='linspace', num_grid_points=100):
+        """Calculate the ICE curve for this x by evaluating an evenly-spaced grid
+        """
         # get grid
         X_new = np.repeat(x, num_grid_points, axis=0)    
         X_col = self.X[:, feature_num]
@@ -124,7 +126,6 @@ class Explainer():
     
     def conditional_samples(self, x, feature_num, num_samples=100, strategy='independent'): 
         """Calculate conditional distr. to sample new feature_num values conditioned on this x
-        
         """
         # sample feature_num        
         if strategy == 'independent':
@@ -149,9 +150,15 @@ class Explainer():
         x_minus[0, feature_num] -= delta
         yhat_minus = pred_func(x_minus)
         
+        # todo - deal with categorical
+        
+        # todo - deal w/ tree-based model
+        
         return (yhat_plus - yhat) / delta, (yhat_minus - yhat) / delta
     
-def viz_expl(expl_dict, delta_plot=0.05):
+def viz_expl(expl_dict, delta_plot=0.05, show=True):
+    '''Visualize the ICE curve, prediction, and scores
+    '''
     plt.plot(expl_dict['ice_plot'][0], expl_dict['ice_plot'][1], color='black')
     x_f = expl_dict['x_feat']
     yhat = expl_dict['pred']
@@ -168,6 +175,7 @@ def viz_expl(expl_dict, delta_plot=0.05):
 
     plt.xlabel('feature value')
     plt.ylabel('model prediction')
-    plt.show()
     
+    if show:
+        plt.show()
     
