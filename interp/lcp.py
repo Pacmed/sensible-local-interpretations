@@ -179,3 +179,8 @@ def viz_expl(expl_dict, delta_plot=0.05, show=True):
     if show:
         plt.show()
     
+def get_interp(models, X_train, y_train):
+    '''Return interpretations for models on this data.
+    
+    '''
+    ...
