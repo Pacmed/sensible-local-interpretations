@@ -244,7 +244,7 @@ def get_performance_metrics(y_true: np.array,
         ap = average_precision_score(y_true, y_score)
 
     else:
-        y_pred = y_score.argmax(LAST_DIM)
+        y_pred = y_score.argmax(-1)
         auc = 0
         f1 = 0
         ap = 0
