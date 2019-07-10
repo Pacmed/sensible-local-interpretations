@@ -4,9 +4,11 @@ import numpy as np
 from copy import deepcopy
 import pandas as pd
 import time, sys, os
+import seaborn as sns
 
 cred = (234/255, 51/255, 86/255)
 cblue = (57/255, 138/255, 242/255)
+cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
 
 class Explainer():
     
@@ -65,7 +67,8 @@ class Explainer():
         
         if return_table:
             vals = pd.DataFrame(scores).sort_values(by='contribution_scores').round(decimals=3)
-            return vals.style.background_gradient(cmap='viridis', low=np.min(vals.min()), high=np.max(vals.max()))
+            lim = np.max([np.abs(np.nanmin(vals.min())), np.abs(np.nanmax(vals.max()))])
+            return vals.style.background_gradient(cmap=cm, low=-lim, high=lim)
         else:
             return scores
     
