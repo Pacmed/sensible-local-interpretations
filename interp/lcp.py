@@ -112,7 +112,8 @@ class Explainer():
         plot_dict = {
             'ice_plot': (x_grid, ice_grid),
             'x_feat': x[:, feature_num],
-            'pred': f(x)
+            'pred': f(x),
+            'feature_num': feature_num
         }
         
         scores_dict = {
@@ -188,28 +189,43 @@ class Explainer():
         
         return (yhat_plus - yhat) / delta, (yhat_minus - yhat) / delta
     
-def viz_expl(expl_dict, delta_plot=0.05, show=True):
-    '''Visualize the ICE curve, prediction, and scores
-    '''
-    plt.plot(expl_dict['ice_plot'][0], expl_dict['ice_plot'][1], color='black')
-    x_f = expl_dict['x_feat']
-    yhat = expl_dict['pred']
-    plt.plot(x_f, yhat, 'o', color='black', ms=8)
-    def cs(score): return cblue if score > 0 else cred
+    def viz_expl(self, expl_dict, delta_plot=0.05, show=True):
+        '''Visualize the ICE curve, prediction, and scores
+        '''
 
-    plt.plot([x_f, x_f + delta_plot], 
-             [yhat, yhat + expl_dict['sensitivity_pos'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_pos']))
-    plt.plot([x_f, x_f - delta_plot], 
-             [yhat, yhat + expl_dict['sensitivity_neg'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_neg']))
+        x_f = expl_dict['x_feat']
+        yhat = expl_dict['pred']
+        plt.plot(x_f, yhat, 'o', color='black', ms=8)
+        plt.plot(expl_dict['ice_plot'][0], expl_dict['ice_plot'][1], color='black')
 
-    plt.axhline(yhat - expl_dict['contribution'], color='gray', alpha=0.5, linestyle='--')
-    plt.plot([x_f, x_f], [yhat, yhat - expl_dict['contribution']], linestyle='--', color = cs(expl_dict['contribution']))
 
-    plt.xlabel('feature value')
-    plt.ylabel('model prediction')
-    
-    if show:
-        plt.show()
+        def cs(score): return cblue if score > 0 else cred
+
+        # deal with categorical variable
+        if self.is_categorical[expl_dict['feature_num']]:
+            if x_f == 0:
+                delta_plot = 1
+            else:
+                delta_plot = -1
+            sensitivity = np.nanmax([expl_dict['sensitivity_pos'], expl_dict['sensitivity_neg']])
+            plt.plot([x_f, x_f + delta_plot], 
+                     [yhat, yhat + sensitivity * delta_plot], lw=10, alpha=0.4, color=cs(sensitivity))
+
+        # continuous variable
+        else:
+            plt.plot([x_f, x_f + delta_plot], 
+                     [yhat, yhat + expl_dict['sensitivity_pos'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_pos']))
+            plt.plot([x_f, x_f - delta_plot], 
+                     [yhat, yhat + expl_dict['sensitivity_neg'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_neg']))
+
+        plt.axhline(yhat - expl_dict['contribution'], color='gray', alpha=0.5, linestyle='--')
+        plt.plot([x_f, x_f], [yhat, yhat - expl_dict['contribution']], linestyle='--', color = cs(expl_dict['contribution']))
+
+        plt.xlabel('feature value')
+        plt.ylabel('model prediction')
+
+        if show:
+            plt.show()
     
 def get_interp(models, X_train, y_train):
     '''Return interpretations for models on this data.
