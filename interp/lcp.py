@@ -28,6 +28,11 @@ class Explainer():
         self.min_vals = np.min(X, axis=0)
         self.max_vals = np.max(X, axis=0)
         
+        # check that categorical variables are 0-1
+        if np.sum(self.min_vals[self.is_categorical]) > 0:
+            assert(self.min_vals[self.is_categorical] == 0 or self.min_vals[self.is_categorical] == 1)
+            assert(self.max_vals[self.is_categorical] == 0 or self.max_vals[self.is_categorical] == 1)
+        
     def explain_instance(self, x, pred_func, class_num=None, return_table=False):
         """Explain the instance x.
 
@@ -152,19 +157,34 @@ class Explainer():
     def calc_sensitivity(self, x, pred_func, feature_num, delta=1e-5):
         '''Calculate sensitivity score
         '''
+        
         yhat = pred_func(x)
-
-        x_plus = deepcopy(x)
-        x_plus[0, feature_num] += delta
-        yhat_plus = pred_func(x_plus)
-
-        x_minus = deepcopy(x)
-        x_minus[0, feature_num] -= delta
-        yhat_minus = pred_func(x_minus)
         
-        # todo - deal with categorical
+        # categorical variables
+        if self.is_categorical[feature_num]:
+            x_diff = deepcopy(x)
+            x_diff[0, feature_num] = 1 - x_diff[0, feature_num]
+            yhat_diff = pred_func(x_diff)
+            
+            if x[0, feature_num] == 1:
+                return (yhat_diff - yhat) * -1, np.nan
+            else:
+                return np.nan, (yhat_diff - yhat)
         
-        # todo - deal w/ tree-based model
+        # continuous variables
+        else:
+            # small increase in x
+            x_plus = deepcopy(x)
+            x_plus[0, feature_num] += delta
+            yhat_plus = pred_func(x_plus)
+
+            # small decrease in x
+            x_minus = deepcopy(x)
+            x_minus[0, feature_num] -= delta
+            yhat_minus = pred_func(x_minus)
+                
+        
+            # todo - deal w/ tree-based model
         
         return (yhat_plus - yhat) / delta, (yhat_minus - yhat) / delta
     
