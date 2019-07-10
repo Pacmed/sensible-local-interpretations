@@ -23,7 +23,7 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
 
     Returns
     -------
-    (auc_auc, acc_auc, flipped_diff, flipped_diff_p)
+    stats: dict
         Flipped diff is the difference between uncertainties for flipped labels vs unflipped labels
     
     '''
@@ -50,10 +50,10 @@ def get_scores(uncertainty, flipped, y, preds):
     flipped_diff = np.mean(uncertainty[flipped]) - np.mean(uncertainty[~flipped])
     t, flipped_diff_p = ttest_ind(uncertainty[flipped], uncertainty[~flipped])
     
-    # acc vs uncertainty scores
-    acc_percentages, acc_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
+    # loss vs uncertainty scores
+    loss_percentages, loss_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
                                   y_axis_label='Loss', performance_fn_args={'reduction': 'sum'})
-    acc_auc = auc(acc_percentages, acc_performances)
+    loss_auc = auc(loss_percentages, loss_performances)
     
     # auc vs uncertainty scores
     auc_percentages, auc_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
@@ -69,12 +69,14 @@ def get_scores(uncertainty, flipped, y, preds):
     return {
         'flipped_diff': flipped_diff, 
         'flipped_diff_p': flipped_diff_p / 2,
-        'acc_percentages': acc_percentages,
-        'acc_performances': acc_performances,
-        'acc_auc': acc_auc,
+        'loss_percentages': loss_percentages,
+        'loss_performances': loss_performances,
+        'loss_auc': loss_auc,
         'auc_percentages': auc_percentages,
         'auc_performances': auc_performances,
         'auc_auc': auc_auc,
+        'calibration_pred': prob_pred,
+        'calibration_true': prob_true,
         'calibration_rmse': calibration_rmse
     }
 

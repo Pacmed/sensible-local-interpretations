@@ -54,7 +54,8 @@ class Explainer():
         }
         
         if return_table:
-            return pd.DataFrame(scores).sort_values(by='contribution_scores').round(decimals=3)
+            vals = pd.DataFrame(scores).sort_values(by='contribution_scores').round(decimals=3)
+            return vals.style.background_gradient(cmap='viridis', low=np.min(vals.min()), high=np.max(vals.max()))
         else:
             return scores
     
@@ -131,6 +132,13 @@ class Explainer():
         if strategy == 'independent':
             num_samples = self.X.shape[0]
             X_feat_samples = self.X[:num_samples, feature_num]
+            
+        '''
+        elif strategy == 'neighborhood_kde':
+            estimator = cde.density_estimator.NeighborKernelDensityEstimation(name='NKDE', ndim_x=None, ndim_y=None, epsilon=0.4, bandwidth=0.6, param_selection='normal_reference', weighted=True, n_jobs=1, random_seed=None)
+            
+            estimator.fit(x)
+        '''
             
         # create copies of the data point with the sampled feature
         X_new = np.repeat(x, num_samples, axis=0)

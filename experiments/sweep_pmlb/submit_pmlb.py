@@ -6,7 +6,7 @@ partition = 'high'
 
 # sweep different ways to initialize weights
 from dset_names import dset_names
-dset_nums = range(10, 50) # len 94
+dset_nums = range(0, 75) # len 94
 
 # run
 s = Slurm("pmlb", {"partition": partition, "time": "3-0", "mem": "MaxMemPerNode"})
