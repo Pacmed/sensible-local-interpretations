@@ -23,6 +23,11 @@ class Explainer():
         self.feature_names = feature_names
         self.mode = mode
         
+        # get some metadata
+        self.is_categorical = pd.DataFrame(X).nunique().values <= 2 # categorical variables should be encoed with 0-1s
+        self.min_vals = np.min(X, axis=0)
+        self.max_vals = np.max(X, axis=0)
+        
     def explain_instance(self, x, pred_func, class_num=None, return_table=False):
         """Explain the instance x.
 
@@ -118,9 +123,8 @@ class Explainer():
         """
         # get grid
         X_new = np.repeat(x, num_grid_points, axis=0)    
-        X_col = self.X[:, feature_num]
         if strategy == 'linspace':
-            X_new[:, feature_num] = np.linspace(X_col.min(), X_col.max(), num_grid_points)
+            X_new[:, feature_num] = np.linspace(self.min_vals[feature_num], self.max_vals[feature_num], num_grid_points)
             
         # return ice value on grid
         return X_new[:, feature_num], pred_func(X_new)
