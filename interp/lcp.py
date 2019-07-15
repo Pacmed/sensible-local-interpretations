@@ -12,7 +12,7 @@ cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
 
 class Explainer():
     
-    def __init__(self, X, feature_names=None, mode='classification'):
+    def __init__(self, X, feature_names=None, mode='classification', strategy='independent'):
         """Initialize the explainer.
 
         Parameters
@@ -34,7 +34,13 @@ class Explainer():
         if np.sum(self.min_vals[self.is_categorical]) > 0:
             assert(self.min_vals[self.is_categorical] == 0 or self.min_vals[self.is_categorical] == 1)
             assert(self.max_vals[self.is_categorical] == 0 or self.max_vals[self.is_categorical] == 1)
-        
+            
+        # deal with conditional sampling
+        self.strategy = strategy
+        if strategy == 'gaussian_kde':
+            from scipy.stats import gaussian_kde
+            self.kde = gaussian_kde(X.T)
+            
     def explain_instance(self, x, pred_func, class_num=None, return_table=False):
         """Explain the instance x.
 
@@ -108,13 +114,11 @@ class Explainer():
                 return pred_func(x)
         
         # calculate ice curve
-        x_grid, ice_grid = self.calc_ice_grid(x, f, feature_num)
-        
+        x_grid, ice_grid, weights_grid = self.calc_ice_grid(x, f, feature_num)
         
         # calculate contribution score
-        X_feat_samples = self.conditional_samples(x, feature_num)
-        pred_samples = f(X_feat_samples)
-        contribution = f(x) - np.mean(pred_samples)
+        conditional_mean = np.dot(ice_grid, weights_grid)
+        contribution = f(x) - conditional_mean 
         
         # calculate sensitivity score
         sensitivity_pos, sensitivity_neg = self.calc_sensitivity(x, f, feature_num)
@@ -135,16 +139,22 @@ class Explainer():
         
         return {**plot_dict, **scores_dict}
         
-    def calc_ice_grid(self, x, pred_func, feature_num, strategy='linspace', num_grid_points=100):
+    def calc_ice_grid(self, x, pred_func, feature_num, num_grid_points=100):
         """Calculate the ICE curve for this x by evaluating an evenly-spaced grid
         """
-        # get grid
+        # get evenly spaced gridgrid
         X_new = np.repeat(x, num_grid_points, axis=0)    
-        if strategy == 'linspace':
-            X_new[:, feature_num] = np.linspace(self.min_vals[feature_num], self.max_vals[feature_num], num_grid_points)
+        X_new[:, feature_num] = np.linspace(self.min_vals[feature_num], self.max_vals[feature_num], num_grid_points)
+            
+        # get "density" weights for each point on grid
+        if self.strategy == 'independent':
+            density_weights = np.ones(num_grid_points) / num_grid_points
+        elif self.strategy == 'gaussian_kde':
+            density_weights = self.kde(X_new.T) #np.ones(num_grid_points) / num_grid_points
+            
             
         # return ice value on grid
-        return X_new[:, feature_num], pred_func(X_new)
+        return X_new[:, feature_num], pred_func(X_new), density_weights
     
     def conditional_samples(self, x, feature_num, num_samples=100, strategy='independent'): 
         """Calculate conditional distr. to sample new feature_num values conditioned on this x
