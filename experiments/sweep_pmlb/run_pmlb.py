@@ -63,7 +63,7 @@ y = (y / np.max(y)).astype(type_orig)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state) # defaults to 0.75: 0.25 splitx`
 
-num_to_flip = int(X_train.shape[0] * p.flip_frac)
+num_to_flip = np.max([2, int(X_train.shape[0] * p.flip_frac)])
 flipped = np.zeros(X_train.shape[0], dtype=np.bool)
 idxs = np.random.choice(X_train.shape[0], num_to_flip, replace=False)
 flipped[idxs] = 1

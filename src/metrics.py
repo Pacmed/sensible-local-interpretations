@@ -19,7 +19,7 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
     flipped_train : boolean ndarray
         Which indexes were flipped during training
     preds: ndarray
-        Should be 1D - if classification, should be class 1
+        Should be 1D - if binary classification, should be class 1
 
     Returns
     -------
@@ -30,40 +30,58 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
     
     # calculate uncertainties
     uncertainty_probit = (preds_confident - preds_diffident)
-    uncertainty_from_pred = 2 * (0.5 - np.abs(preds_canonical - 0.5))
+
+    def h(x): 
+        return -x * np.log2(x) - (1 - x) * np.log2(1 - x)
+    uncertainty_entropy = h(preds_canonical) # 2 * (0.5 - np.abs(preds_canonical - 0.5))
     
     scores_all = {}
     for (uncertainty, uncertainty_name) in [(uncertainty_probit, 'uncertainty_probit'), 
-                                            (uncertainty_from_pred, 'uncertainty_from_pred')]:
+                                            (uncertainty_entropy, 'uncertainty_entropy')]:
         scores = get_scores(uncertainty, flipped, y, preds_canonical)
         for key in scores:
             scores_all[uncertainty_name + '_' + key + '_' + suffix] = scores[key]
     
 #     print(f'uncertainty flipped: {np.mean(uncertainties_probit[~flipped]):0.2f} unflipped: {np.mean(uncertainties_probit[~flipped])}')
-#     print(f'uncertainty flipped: {np.mean(uncertainty_from_pred[~flipped]):0.2f} unflipped: {np.mean(uncertainty_from_pred[~flipped])}')
+#     print(f'uncertainty flipped: {np.mean(uncertainty_entropy[~flipped]):0.2f} unflipped: {np.mean(uncertainty_entropy[~flipped])}')
 
     return scores_all
     
 
-def get_scores(uncertainty, flipped, y, preds):    
-    # flipped scores
-    flipped_diff = np.mean(uncertainty[flipped]) - np.mean(uncertainty[~flipped])
-    t, flipped_diff_p = ttest_ind(uncertainty[flipped], uncertainty[~flipped])
+def get_scores(uncertainty, flipped, y, preds): 
     
-    # loss vs uncertainty scores
-    loss_percentages, loss_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
-                                  y_axis_label='Loss', performance_fn_args={'reduction': 'sum'})
-    loss_auc = auc(loss_percentages, loss_performances)
+    flipped_diff = np.nan
+    loss_percentages = np.nan
+    loss_performances = np.nan
+    loss_auc = np.nan
+    auc_percentages = np.nan
+    auc_performances = np.nan
+    auc_auc = np.nan
+    prob_pred = np.nan
+    prob_true = np.nan
+    calibration_rmse = np.nan   
     
-    # auc vs uncertainty scores
-    auc_percentages, auc_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
-                                  y_axis_label='AUC', performance_fn=utils.roc_auc_score)  
-    auc_auc = auc(auc_percentages, auc_performances)
-    
-    # calibration score (deviation from y=x line, doesn't weight points)
-    prob_true, prob_pred = calibration_curve(y[~flipped], preds[~flipped], normalize=False, 
-                                             n_bins=5, strategy='uniform')
-    calibration_rmse = np.sqrt(np.mean(np.square(prob_pred - prob_true)))
+    try:
+        # flipped scores
+        flipped_diff = np.mean(uncertainty[flipped]) - np.mean(uncertainty[~flipped])
+        t, flipped_diff_p = ttest_ind(uncertainty[flipped], uncertainty[~flipped])
+
+        # loss vs uncertainty scores
+        loss_percentages, loss_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
+                                      y_axis_label='Loss', performance_fn_args={'reduction': 'sum'})
+        loss_auc = auc(loss_percentages, loss_performances)
+
+        # auc vs uncertainty scores
+        auc_percentages, auc_performances = utils.get_performance_vs_uncertainty(y[~flipped], preds[~flipped], uncertainty[~flipped],
+                                      y_axis_label='AUC', performance_fn=utils.roc_auc_score)  
+        auc_auc = auc(auc_percentages, auc_performances)
+
+        # calibration score (deviation from y=x line, doesn't weight points)
+        prob_true, prob_pred = calibration_curve(y[~flipped], preds[~flipped], normalize=False, 
+                                                 n_bins=5, strategy='uniform')
+        calibration_rmse = np.sqrt(np.mean(np.square(prob_pred - prob_true)))
+    except:
+        pass
 
     
     return {

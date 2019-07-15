@@ -49,24 +49,28 @@ class Explainer():
         -------
         ndarray
             Array of values same shape as x with importance score for each feature.
+            
         """
         contribution_scores = []
         sensitivity_pos_scores = []
         sensitivity_neg_scores = []
+        sensitivity_scores = []
         for feature_num in range(x.size):
             scores = self.explain_instance_feature_num(x, pred_func, feature_num, class_num)
             contribution_scores.append(scores['contribution'])
             sensitivity_pos_scores.append(scores['sensitivity_pos'])
             sensitivity_neg_scores.append(scores['sensitivity_neg'])
+            sensitivity_scores.append(scores['sensitivity'])
         
         scores = {
-            'contribution_scores': contribution_scores, 
-            'sensitivity_pos_scores': sensitivity_pos_scores,
-            'sensitivity_neg_scores': sensitivity_neg_scores
+            'contribution': contribution_scores, 
+            'sensitivity_pos': sensitivity_pos_scores,
+            'sensitivity_neg': sensitivity_neg_scores,
+            'sensitivity': sensitivity_scores
         }
         
         if return_table:
-            vals = pd.DataFrame(scores).sort_values(by='contribution_scores').round(decimals=3)
+            vals = pd.DataFrame(scores).sort_values(by='contribution').round(decimals=3)
             lim = np.max([np.abs(np.nanmin(vals.min())), np.abs(np.nanmax(vals.max()))])
             return vals.style.background_gradient(cmap=cm, low=-lim, high=lim)
         else:
@@ -84,13 +88,16 @@ class Explainer():
             Callable function which returns the model's prediction given x
         feature_num : int
             Index for feature to be interpreted
-        class_num: int
+        class_num : int
             If self.mode == 'classification', class_num is which class to interpret
 
         Returns
         -------
-        float
-            importance for feature_num
+        dict
+            sensitivity_pos : float
+                change when feature is increased
+            sensitivity_neg : float
+                change when feature is decreased
         """
         
         # wrap function for classification
@@ -121,8 +128,9 @@ class Explainer():
         
         scores_dict = {
             'contribution': float(contribution),
-            'sensitivity_pos': float(sensitivity_pos),
-            'sensitivity_neg': float(sensitivity_neg)
+            'sensitivity_pos': sensitivity_pos,
+            'sensitivity_neg': sensitivity_neg,
+            'sensitivity': np.nanmean([sensitivity_pos, sensitivity_neg])
         }
         
         return {**plot_dict, **scores_dict}
@@ -171,26 +179,38 @@ class Explainer():
             yhat_diff = pred_func(x_diff)
             
             if x[0, feature_num] == 1:
-                return (yhat_diff - yhat) * -1, np.nan
+                return float((yhat_diff - yhat) * -1), np.nan
             else:
-                return np.nan, (yhat_diff - yhat)
+                return np.nan, float((yhat_diff - yhat))
         
         # continuous variables
         else:
             # small increase in x
+            delta_pos = delta
             x_plus = deepcopy(x)
-            x_plus[0, feature_num] += delta
-            yhat_plus = pred_func(x_plus)
+            while True:
+                delta_pos *= 2
+                x_plus[0, feature_num] += delta_pos
+                yhat_plus = pred_func(x_plus)
+                
+                
+                # if the prediction didn't change, keep doubling the delta until we exceed the feature's max value
+                if not yhat_plus == yhat or x_plus[0, feature_num] > self.max_vals[feature_num]:
+                    break                    
 
             # small decrease in x
+            delta_neg = delta
             x_minus = deepcopy(x)
-            x_minus[0, feature_num] -= delta
-            yhat_minus = pred_func(x_minus)
+            while True:
+                delta_neg *= 2
+                x_minus[0, feature_num] -= delta_neg
+                yhat_minus = pred_func(x_minus)
                 
+                # if the prediction didn't change, keep doubling the delta until we exceed the feature's max value
+                if not yhat_minus == yhat or x_minus[0, feature_num] < self.min_vals[feature_num]:
+                    break
         
-            # todo - deal w/ tree-based model
-        
-        return (yhat_plus - yhat) / delta, (yhat_minus - yhat) / delta
+        return float((yhat_plus - yhat) / delta_pos), float((yhat_minus - yhat) / delta_neg)
     
     def viz_expl(self, expl_dict, delta_plot=0.05, show=True):
         '''Visualize the ICE curve, prediction, and scores
