@@ -23,6 +23,9 @@ class Explainer():
         """
         self.X = X
         self.feature_names = feature_names
+        if self.feature_names is None:
+            self.feature_names = ["x" + str(i) for i in range(X.shape[1])]
+            
         self.mode = mode
         
         # get some metadata
@@ -57,26 +60,34 @@ class Explainer():
             Array of values same shape as x with importance score for each feature.
             
         """
-        contribution_scores = []
-        sensitivity_pos_scores = []
-        sensitivity_neg_scores = []
-        sensitivity_scores = []
-        for feature_num in range(x.size):
-            scores = self.explain_instance_feature_num(x, pred_func, feature_num, class_num)
+        scores = pd.concat(
+            [pd.Series(self.explain_instance_feature_num(x, pred_func, feature_num, class_num)) for feature_num in range(x.size)],
+            axis=1
+        ).transpose()
+        
+        '''
             contribution_scores.append(scores['contribution'])
             sensitivity_pos_scores.append(scores['sensitivity_pos'])
             sensitivity_neg_scores.append(scores['sensitivity_neg'])
             sensitivity_scores.append(scores['sensitivity'])
+            ice_curves.append(scores['ice_plot'])
         
         scores = {
             'contribution': contribution_scores, 
             'sensitivity_pos': sensitivity_pos_scores,
             'sensitivity_neg': sensitivity_neg_scores,
-            'sensitivity': sensitivity_scores
+            'sensitivity': sensitivity_scores,
+            'feature_names': self.feature_names,
+            'values': x.flatten(),
+            'ice_grid': ice_curves
         }
+        '''
+        
         
         if return_table:
-            vals = pd.DataFrame(scores).sort_values(by='contribution').round(decimals=3)
+            vals = pd.DataFrame(scores[['contribution', 'sensitivity']])
+            vals.index = self.feature_names
+            vals = vals.sort_values(by='contribution').round(decimals=3)
             lim = np.max([np.abs(np.nanmin(vals.min())), np.abs(np.nanmax(vals.max()))])
             return vals.style.background_gradient(cmap=cm, low=-lim, high=lim)
         else:
@@ -127,6 +138,7 @@ class Explainer():
             'ice_plot': (x_grid, ice_grid),
             'x_feat': x[:, feature_num],
             'pred': f(x),
+            'feature_name': self.feature_names[feature_num],
             'feature_num': feature_num
         }
         
@@ -259,9 +271,3 @@ class Explainer():
 
         if show:
             plt.show()
-    
-def get_interp(models, X_train, y_train):
-    '''Return interpretations for models on this data.
-    
-    '''
-    ...
