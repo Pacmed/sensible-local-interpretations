@@ -63,7 +63,7 @@ class Explainer():
         scores = pd.concat(
             [pd.Series(self.explain_instance_feature_num(x, pred_func, feature_num, class_num)) for feature_num in range(x.size)],
             axis=1
-        ).transpose()
+        ).transpose().infer_objects()
         
         '''
             contribution_scores.append(scores['contribution'])
@@ -136,7 +136,7 @@ class Explainer():
         
         plot_dict = {
             'ice_plot': (x_grid, ice_grid),
-            'x_feat': x[:, feature_num],
+            'x_feat': float(x[:, feature_num]),
             'pred': f(x),
             'feature_name': self.feature_names[feature_num],
             'feature_num': feature_num
