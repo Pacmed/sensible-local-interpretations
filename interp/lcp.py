@@ -93,9 +93,9 @@ class Explainer():
         -------
         dict
             sensitivity_pos : float
-                change when feature is increased
+                slope (calculated in positive direction)
             sensitivity_neg : float
-                change when feature is decreased
+                slope (calculated in negative direction)
         """
         
         # wrap function for classification
@@ -177,14 +177,15 @@ class Explainer():
         
         # categorical variables
         if self.is_categorical[feature_num]:
+#             print('categorical')
             x_diff = deepcopy(x)
             x_diff[0, feature_num] = 1 - x_diff[0, feature_num]
             yhat_diff = pred_func(x_diff)
             
             if x[0, feature_num] == 1:
-                return float((yhat_diff - yhat) * -1), np.nan
+                return float(yhat_diff - yhat), np.nan
             else:
-                return np.nan, float((yhat_diff - yhat))
+                return np.nan, -float(yhat - yhat_diff)
         
         # continuous variables
         else:
@@ -213,7 +214,7 @@ class Explainer():
                 if not yhat_minus == yhat or x_minus[0, feature_num] < self.min_vals[feature_num]:
                     break
         
-        return float((yhat_plus - yhat) / delta_pos), float((yhat_minus - yhat) / delta_neg)
+        return float((yhat_plus - yhat) / delta_pos), float((yhat - yhat_minus) / delta_neg)
     
     def viz_expl_feature(self, expl_dict, delta_plot=0.05, show=True):
         '''Visualize the ICE curve, prediction, and scores
@@ -229,6 +230,7 @@ class Explainer():
 
         # deal with categorical variable
         if self.is_categorical[expl_dict['feature_num']]:
+            print('categorical', expl_dict['sensitivity_pos'], expl_dict['sensitivity_neg'])
             if x_f == 0:
                 delta_plot = 1
             else:
@@ -242,12 +244,12 @@ class Explainer():
             plt.plot([x_f, x_f + delta_plot], 
                      [yhat, yhat + expl_dict['sensitivity_pos'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_pos']))
             plt.plot([x_f, x_f - delta_plot], 
-                     [yhat, yhat + expl_dict['sensitivity_neg'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_neg']))
+                     [yhat, yhat - expl_dict['sensitivity_neg'] * delta_plot], lw=10, alpha=0.4, color=cs(expl_dict['sensitivity_neg']))
 
         plt.axhline(yhat - expl_dict['contribution'], color='gray', alpha=0.5, linestyle='--')
         plt.plot([x_f, x_f], [yhat, yhat - expl_dict['contribution']], linestyle='--', color = cs(expl_dict['contribution']))
 
-        plt.xlabel('feature value')
+        plt.xlabel(expl_dict['feature_name'])
         plt.ylabel('model prediction')
 
         if show:
