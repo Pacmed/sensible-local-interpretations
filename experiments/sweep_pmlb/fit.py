@@ -13,53 +13,13 @@ from sklearn.model_selection import train_test_split
 
 # sklearn models
 from sklearn.calibration import calibration_curve
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier
-from sklearn.tree import export_graphviz, DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.tree import plot_tree
 from sklearn.metrics import auc
-from sklearn.neural_network import MLPClassifier
-
 from metrics import get_metrics
-
-
 import pmlb
 from dset_names import dset_names
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import RandomOverSampler
+from train import train_models
 
-def resample(X, y, sample_type='over', class_weight=1.0, num_reps=2):        
-    # figure out what ratio we want
-    class0 = np.sum(y==0)
-    class1 = np.sum(y==1)
-    desired_ratio = {0: int(class0 * num_reps), 
-                     1: int(class1 * num_reps * class_weight)}
-    
-    # do the sampling
-    if sample_type == 'over':
-        rs = RandomOverSampler(desired_ratio)
-    else:
-        rs = RandomUnderSampler(desired_ratio)
-    X_res, y_res = rs.fit_resample(X, y)
-    return X_res, y_res
 
-def train_models(p, X, y):
-    models = []
-    for class_weight in [p.class_weight, 1, 1 / p.class_weight]:
-        
-        if p.model_type == 'logistic':
-            m = LogisticRegression(solver='lbfgs', random_state=13, class_weight={0: 1, 1: class_weight})          
-        elif p.model_type == 'mlp2':
-            m = MLPClassifier()
-            X, y = resample(X, y, sample_type='over', class_weight=class_weight)
-        elif p.model_type == 'rf':
-            m = RandomForestClassifier(class_weight={0: 1, 1: class_weight})
-        elif p.model_type == 'gb':
-            m = GradientBoostingClassifier()
-            X, y = resample(X, y, sample_type='over', class_weight=class_weight)
-        m.fit(X, y)
-        models.append(deepcopy(m))
-    return models
     
 
 from params import p
@@ -100,7 +60,8 @@ flipped_test[idxs_test] = 1
 y_test[idxs_test] = 1 - y_test[idxs_test]
 
 # train the models
-models = train_models(p, X_train, y_train)
+class_weights = [p.class_weight, 1, 1 / p.class_weight]
+models = train_models(X_train, y_train, class_weights, model_type=p.model_type)
 
 # calculate predictions
 metrics_train = get_metrics(models[0].predict_proba(X_train)[:, 1], models[1].predict_proba(X_train)[:, 1], models[2].predict_proba(X_train)[:, 1], 
@@ -114,4 +75,6 @@ params_dict = p._dict(p)
 results_combined = {**params_dict, **metrics_train, **metrics_test}    
 
 # dump
-pkl.dump(results_combined, open(oj(p.out_dir, out_name + '.pkl'), 'wb'))
+out_name = oj(p.out_dir, out_name + '.pkl')
+pkl.dump(results_combined, open(out_name, 'wb'))
+print(f'success! saved to {out_name}')

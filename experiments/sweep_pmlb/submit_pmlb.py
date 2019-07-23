@@ -9,7 +9,7 @@ from dset_names import dset_names
 dset_nums = range(0, 75) # len 94
 
 # run
-s = Slurm("pmlb", {"partition": partition, "time": "3-0", "mem": "MaxMemPerNode"})
+s = Slurm("pmlb", {"partition": partition, "time": "1-0", "mem": "MaxMemPerNode"})
 
 # iterate
 for i in dset_nums:

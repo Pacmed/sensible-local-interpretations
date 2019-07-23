@@ -29,7 +29,7 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
     '''
     
     # calculate uncertainties
-    uncertainty_probit = (preds_confident - preds_diffident)
+    uncertainty_probit = np.abs(preds_confident - preds_diffident)
 
     def h(x): 
         return -x * np.log2(x) - (1 - x) * np.log2(1 - x)
