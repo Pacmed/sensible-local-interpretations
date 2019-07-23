@@ -9,6 +9,7 @@ import seaborn as sns
 cred = (234/255, 51/255, 86/255)
 cblue = (57/255, 138/255, 242/255)
 cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
+from visualize import background_gradient
 
 class Explainer():
     
@@ -72,9 +73,21 @@ class Explainer():
         if return_table:
             vals = pd.DataFrame(scores[['contribution', 'sensitivity']])
             vals.index = self.feature_names
-            vals = vals.sort_values(by='contribution').round(decimals=3)
-            lim = np.max([np.abs(np.nanmin(vals.min())), np.abs(np.nanmax(vals.max()))])
-            return vals.style.background_gradient(cmap=cm, low=-lim, high=lim)
+            vals = vals.reindex(vals.contribution.abs().sort_values(ascending=False).index) # sort by contribution
+            vals = vals.round(decimals=3)
+
+            # apply appropriate color gradient centered at 0 by column
+            lim_c = np.max([np.abs(np.nanmin(vals['contribution'])), np.abs(np.nanmax(vals['contribution']))])
+            lim_s = np.max([np.abs(np.nanmin(vals['sensitivity'])), np.abs(np.nanmax(vals['sensitivity']))])
+            vals = vals.style.applymap(lambda val : 'color: black')
+            vals = vals.apply(background_gradient, axis=None, 
+                                    cmap=cm, cmin=-lim_c, cmax=lim_c,
+                                    subset='contribution')
+            vals = vals.apply(background_gradient, axis=None, 
+                                    cmap=cm, cmin=-lim_s, cmax=lim_s,
+                                    subset='sensitivity')
+
+            return vals
         else:
             return scores
     
