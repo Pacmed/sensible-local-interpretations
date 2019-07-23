@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 # sklearn models
 from sklearn.calibration import calibration_curve
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier
 from sklearn.tree import export_graphviz, DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.tree import plot_tree
 from sklearn.metrics import auc
@@ -47,15 +47,17 @@ def train_models(p, X, y):
     models = []
     for class_weight in [p.class_weight, 1, 1 / p.class_weight]:
         
-        
         if p.model_type == 'logistic':
-            m = LogisticRegression(solver='lbfgs', random_state=13, class_weight={0: 1, 1: class_weight})
-            X_res, y_res = X, y           
+            m = LogisticRegression(solver='lbfgs', random_state=13, class_weight={0: 1, 1: class_weight})          
         elif p.model_type == 'mlp2':
             m = MLPClassifier()
-            X_res, y_res = resample(X, y, sample_type='over', class_weight=class_weight)
-        
-        m.fit(X_res, y_res)
+            X, y = resample(X, y, sample_type='over', class_weight=class_weight)
+        elif p.model_type == 'rf':
+            m = RandomForestClassifier(class_weight={0: 1, 1: class_weight})
+        elif p.model_type == 'gb':
+            m = GradientBoostingClassifier()
+            X, y = resample(X, y, sample_type='over', class_weight=class_weight)
+        m.fit(X, y)
         models.append(deepcopy(m))
     return models
     

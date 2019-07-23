@@ -7,12 +7,12 @@ class p:
     
     seed = 0 # random seed  
     class_weight = 1 # weighting for positive class
-    model_type = 'mlp2'
+    model_type = 'gb'
     flip_frac = 0.1 # 0.08
     
 
     # saving ########
-    out_dir = '/scratch/users/vision/chandan/pacmed/mlp_sweep' # directory for saving
+    out_dir = '/scratch/users/vision/chandan/pacmed/gb' # directory for saving
 
     # exporting ########
     pid = ''.join(["%s" % randint(0, 9) for num in range(0, 20)])
