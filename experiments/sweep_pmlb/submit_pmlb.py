@@ -13,6 +13,6 @@ s = Slurm("pmlb", {"partition": partition, "time": "3-0", "mem": "MaxMemPerNode"
 
 # iterate
 for i in dset_nums:
-    param_str = 'module load python; python3 /accounts/projects/vision/chandan/pacmed/experiments/sweep_pmlb/run_pmlb.py dset_name '
+    param_str = 'module load python; python3 /accounts/projects/vision/chandan/class-weight-uncertainty/experiments/sweep_pmlb/fit.py dset_name '
     param_str += str(dset_names[i])
     s.run(param_str)

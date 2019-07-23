@@ -1,3 +1,4 @@
+# all of these datasets are binary classification
 dset_names = ['GAMETES_Epistasis_2-Way_1000atts_0.4H_EDM-1_EDM-1_1',
  'GAMETES_Epistasis_2-Way_20atts_0.1H_EDM-1_1',
  'GAMETES_Epistasis_2-Way_20atts_0.4H_EDM-1_1',

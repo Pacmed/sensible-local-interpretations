@@ -36,8 +36,8 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
     uncertainty_entropy = h(preds_canonical) # 2 * (0.5 - np.abs(preds_canonical - 0.5))
     
     scores_all = {}
-    for (uncertainty, uncertainty_name) in [(uncertainty_probit, 'uncertainty_probit'), 
-                                            (uncertainty_entropy, 'uncertainty_entropy')]:
+    for (uncertainty, uncertainty_name) in [(uncertainty_probit, 'cw'), 
+                                            (uncertainty_entropy, 'pe')]:
         scores = get_scores(uncertainty, flipped, y, preds_canonical)
         for key in scores:
             scores_all[uncertainty_name + '_' + key + '_' + suffix] = scores[key]
