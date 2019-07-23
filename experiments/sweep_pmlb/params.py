@@ -6,7 +6,7 @@ class p:
     dset_name = 'GAMETES_Epistasis_2-Way_20atts_0.4H_EDM-1_1' #0
     
     seed = 0 # random seed  
-    class_weight = 1 # weighting for positive class
+    class_weight = 2 # weighting for positive class
     model_type = 'logistic'
     flip_frac = 0 # 0.08
     

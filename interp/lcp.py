@@ -12,20 +12,24 @@ cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
 
 class Explainer():
     
-    def __init__(self, X, feature_names=None, mode='classification', strategy='independent'):
+    def __init__(self, X, feature_names=None, mode='classification', strategy='independent', target_name=None):
         """Initialize the explainer.
 
         Parameters
         ----------
         X : ndarray
             Training data, used to properly sample the curves for the interpretation
+        feature_names: list[str]
+            Feature names, only used for plotting, returning tables
+        target_name: str
+            Name of target, only used for plotting
 
         """
         self.X = X
         self.feature_names = feature_names
         if self.feature_names is None:
             self.feature_names = ["x" + str(i) for i in range(X.shape[1])]
-            
+        self.target_name = target_name
         self.mode = mode
         
         # get some metadata
@@ -250,7 +254,11 @@ class Explainer():
         plt.plot([x_f, x_f], [yhat, yhat - expl_dict['contribution']], linestyle='--', color = cs(expl_dict['contribution']))
 
         plt.xlabel(expl_dict['feature_name'])
-        plt.ylabel('model prediction')
+        
+        if self.target_name is not None:
+            plt.ylabel(f'predicted probability for \"{self.target_name}\"')            
+        else:
+            plt.ylabel('model prediction')
 
         if show:
             plt.show()

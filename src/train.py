@@ -1,9 +1,5 @@
 from copy import deepcopy
-import pandas as pd
-from numpy import array as arr
-import time, os
-import sys
-
+import numpy as np
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier
@@ -11,7 +7,16 @@ from sklearn.tree import export_graphviz, DecisionTreeClassifier, DecisionTreeRe
 from sklearn.tree import plot_tree
 from sampling import resample
 
-def train_models(X, y, class_weights=[0.5, 1.0, 2.0], model_type='logistic'):
+def train_models(X: np.ndarray, y: np.ndarray, 
+                 class_weights: list=[0.5, 1.0, 2.0], model_type: str='logistic'):
+    '''
+    
+    Params
+    ------
+    class_weights
+        Weights to weight the positive class, one for each model to be trained
+    
+    '''
     models = []
     for class_weight in class_weights:
         if model_type == 'logistic':
