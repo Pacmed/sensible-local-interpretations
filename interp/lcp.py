@@ -291,70 +291,92 @@ class Explainer():
         if show:
             plt.show()
             
-    def viz_expl(self, expl_dict, delta_plot=0.05, show=True, filename='out.html'):
+    def viz_expl(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True, filename='out.html'):
         import plotly.graph_objs as go
         import plotly.figure_factory as ff
         from plotly.offline import plot
         
-        df = pd.DataFrame(expl_dict).sort_values(by='contribution').round(decimals=3)
-        df_plot = df[['feature_name', 'x_feat', 
-                      'contribution', 'sensitivity']].rename(index=str, columns={'feature_name': 'Feature', 
-                                                                                'x_feat': 'Value', 
-                                                                                'contribution': 'Contribution', 
-                                                                                'sensitivity': 'Sensitivity'})
+        df = pd.DataFrame(expl_dict).round(decimals=3)
         df = df.sort_values(by='feature_name')
-        fig = ff.create_table(df_plot, height_constant=65)
-
-        names = []
+        
+        # make table
+        df_tab = df[['feature_name', 'x_feat', 'contribution', 'sensitivity']]
+        df_tab = df_tab.sort_values(by='contribution')
+        df_tab = df_tab.rename(index=str, 
+                               columns={'feature_name': 'Feature', 
+                                        'x_feat': 'Value', 
+                                        'contribution': 'Contribution', 
+                                        'sensitivity': 'Sensitivity'})
+        fig = ff.create_table(df_tab, height_constant=40)
+        
+        
+        # interval dicts initialize
+        num_traces_per_plot = 3
+        if interval_dicts is not None:
+            df_ci0 = pd.DataFrame(interval_dicts[0]).sort_values(by='feature_name')
+            df_ci1 = pd.DataFrame(interval_dicts[1]).sort_values(by='feature_name')
+            num_traces_per_plot = 5
 
         # add a bunch of scatter plots
         traces = []
         for i in range(df.shape[0]):
             row = df.iloc[i]
             name = row.feature_name
-            names.append(name)
             ice_x, ice_y = row.ice_plot
+            
+            # plot ice curve
             traces.append(go.Scatter(x=ice_x,
                             y=ice_y,
-#                             name=name,
                             showlegend=False,
-                            visible= name == df.feature_name[0],
+                            visible= name == df_tab.Feature[0],
                             xaxis='x2', yaxis='y2'))
 
+            # plot pred
             traces.append(go.Scatter(x=[row.x_feat],
                             y=row.pred,
                             mode='markers',
                             marker=dict(
                                 size=20,
                             ),
-#                             name=name,
                             showlegend=False,
-                            visible= name == df.feature_name[0],
+                            visible= name == df_tab.Feature[0],
                             xaxis='x2', yaxis='y2'))
             
+            # plot expectation line
             expectation_line_val = float(row.pred - row.contribution)
             traces.append(go.Scatter(x=[np.min(ice_x), np.max(ice_x)],
                             y=[expectation_line_val, expectation_line_val], 
-                            line=dict(color='gray', width=4),
+                            line=dict(color='gray', width=4, dash='dash'),
+                            opacity=0.5,
                             showlegend=False,
-                            visible= name == df.feature_name[0],
+                            visible= name == df_tab.Feature[0],
                             xaxis='x2', yaxis='y2'))
+            
+            # plot interval lines
+            if interval_dicts is not None:
+                for df_ci in [df_ci0, df_ci1]:
+                    x, y = df_ci.iloc[i].ice_plot
+                    traces.append(go.Scatter(x=x,
+                                y=y,
+                                showlegend=False,
+                                line=dict(color='gray', width=3),
+                                visible= name == df_tab.Feature[0],
+                                opacity=0.4,
+                                xaxis='x2', yaxis='y2'))
     
-#             plt.axhline(yhat - expl_dict['contribution'], color='gray', alpha=0.5, linestyle='--')
-#             plt.plot([x_f, x_f], [yhat, yhat - expl_dict['contribution']], linestyle='--', color = cs(expl_dict['contribution']))
 
         fig.add_traces(traces)
 
 
         # add buttons to toggle visibility
         buttons = []
-        for i, name in enumerate(names):
-            visible = [True] + [False] * 3 * len(names)
-            visible[3 * i + 1] = True
-            visible[3 * i + 2] = True
-            visible[3 * i + 3] = True
+        for i, name in enumerate(df.feature_name):
+            table_offset = 1
+            visible = np.array([True] * table_offset + [False] * num_traces_per_plot * len(df.feature_name))
+            visible[num_traces_per_plot * i + table_offset: num_traces_per_plot * (i + 1) + table_offset] = True            
             buttons.append(
                 dict(
+#                     active=name==df_tab.Feature[0],
                     method='restyle',
                     args=[{'visible': visible}],
                     label=name
@@ -363,7 +385,20 @@ class Explainer():
         # initialize xaxis2 and yaxis2
         fig['layout']['xaxis2'] = {}
         fig['layout']['yaxis2'] = {}
-
+        
+        
+        fig.layout.updatemenus = [go.layout.Updatemenu(
+#             list([
+            dict(
+                active=int(np.argmax(df.feature_name.values == df_tab.Feature[0])),
+                buttons=buttons,
+                x=0.8, # this is fraction of entire screen
+                y=-0.08,
+                direction='up'
+            )
+#             ])
+        )]
+        '''
         fig.layout.updatemenus = list([
                 dict(
                     buttons=buttons,
@@ -372,6 +407,8 @@ class Explainer():
                     direction='up'
                 )
             ])
+        '''
+        
         # Edit layout for subplots
         fig.layout.xaxis.update({'domain': [0, .5]})
         fig.layout.xaxis2.update({'domain': [0.6, 1.]})
