@@ -92,7 +92,7 @@ class Explainer():
             return scores
     
         
-    def explain_instance_feature(self, x, pred_func, feature_num, class_num=None):
+    def explain_instance_feature(self, x, pred_func, feature_name=None, feature_num=None, class_num=None):
         """Explain the instance x.
 
         Parameters
@@ -101,9 +101,11 @@ class Explainer():
             Single data point to be explained
         pred_func : func
             Callable function which returns the model's prediction given x
-        feature_num : int
+        feature_name : str, optional (must specify this or feature_num)
+            Name of feature to be interpreted
+        feature_num : int, optional (must specify this or feature_name)
             Index for feature to be interpreted
-        class_num : int
+        class_num : int, optional
             If self.mode == 'classification', class_num is which class to interpret
 
         Returns
@@ -114,6 +116,13 @@ class Explainer():
             sensitivity_neg : float
                 slope (calculated in negative direction)
         """
+        
+        # deal with arguments
+        if feature_name is None and feature_num is None:
+            raise ValueError('Either feature_name or feature_num must be specificed')
+        elif feature_name is not None:
+            assert feature_name in self.feature_names, f"feature_name {feature_name} not found"
+            feature_num = np.argmax(self.feature_names == feature_name)
         
         # wrap function for classification
         def f(x):
