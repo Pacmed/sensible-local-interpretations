@@ -307,7 +307,21 @@ class Explainer():
                                         'x_feat': 'Value', 
                                         'contribution': 'Contribution', 
                                         'sensitivity': 'Sensitivity'})
-        fig = ff.create_table(df_tab, height_constant=40)
+        
+        '''
+        x = ['Product A', 'Product B', 'Product C']
+        y = [20, 14, 23]
+
+        # Use textposition='auto' for direct text
+        fig = make_subplots(rows=1, cols=2)
+        
+        fig = go.Figure(data=[go.Bar(
+                    x=x, y=y,
+                    text=y,
+                    textposition='auto',
+                )])
+        '''
+        fig = ff.create_table(df_tab, height_constant=20)
         
         
         # interval dicts initialize
@@ -329,6 +343,7 @@ class Explainer():
                             y=ice_y,
                             showlegend=False,
                             visible= name == df_tab.Feature[0],
+                            name='ICE curve',
                             xaxis='x2', yaxis='y2'))
 
             # plot pred
@@ -339,6 +354,7 @@ class Explainer():
                                 size=20,
                             ),
                             showlegend=False,
+                            name='prediction',
                             visible= name == df_tab.Feature[0],
                             xaxis='x2', yaxis='y2'))
             
@@ -362,6 +378,7 @@ class Explainer():
                                 line=dict(color='gray', width=3),
                                 visible= name == df_tab.Feature[0],
                                 opacity=0.4,
+                                name='interval',
                                 xaxis='x2', yaxis='y2'))
     
 
@@ -422,4 +439,11 @@ class Explainer():
         fig.layout.update({'title': 'Interpreting one data point'})
 
         # fig.layout.template = 'plotly_dark'
-        plot(fig, filename=filename) 
+        plot(fig, filename=filename, config={'showLink': False, 
+                                             'showSendToCloud': False,
+                                             'sendData': True,
+                                             'responsive': True,
+                                             'autosizable': True,
+                                             'showEditInChartStudio': False,
+                                             'displaylogo': False
+                                            }) 
