@@ -313,7 +313,7 @@ class Explainer():
         if show:
             plt.show()
             
-    def viz_expl(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True, filename='out.html', mult_100=True):
+    def viz_expl(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True, filename='out.html', mult_100=True, point_id=None):
         import plotly.graph_objs as go
         import plotly.figure_factory as ff
         from plotly.offline import plot
@@ -327,7 +327,8 @@ class Explainer():
         
         # make table
         df_tab = df[['feature_name', 'x_feat', 'contribution', 'sensitivity']]
-        df_tab = df_tab.sort_values(by='contribution')
+        df_tab = df_tab.reindex(df_tab.contribution.abs().sort_values(ascending=False).index) # sort by contribution 
+        #df_tab = df_tab.sort_values(by='contribution')
         df_tab = df_tab.rename(index=str, 
                                columns={'feature_name': 'Feature', 
                                         'x_feat': 'Value', 
@@ -443,8 +444,6 @@ class Explainer():
         # Update the margins to add a title and see graph x-labels.
         fig.layout.margin.update({'t':50, 'b':100})
         
-        point_id = 'Unknown'
-        
         s = f'<br>Prediction: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{pred:0.2f}</span>\t             '
         s += f'Uncertainty: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{uncertainty:0.2f}</span>'
         if hasattr(self, 'preds'):
@@ -454,7 +453,8 @@ class Explainer():
             perc_uncertainty = int(stats.percentileofscore(self.uncertainties, unc_norm))
             s += f'<br><span style="color:gray;font-size:13px">Perc. {perc_pred:d}</span>\t                                   '
             s += f'<span style="color:gray;font-size:13px">Perc. {perc_uncertainty:d}</span>'
-        s += f'<br>\t <span style="font-weight:italic;font-size:15px">Point ID: {point_id}</span><br>'
+        if not point_id is None:
+            s += f'<br>\t <span style="font-weight:italic;font-size:15px">Point ID: {point_id}</span><br>'
         fig.layout.update({
             'title': s,
             'height': 800
