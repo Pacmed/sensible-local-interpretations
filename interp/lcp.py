@@ -388,7 +388,6 @@ class Explainer():
             
             # plot interval lines
             if interval_dicts is not None:
-                # print('idicts', interval_dicts)
                 for df_ci in [df_ci0, df_ci1]:
                     # x, y = df_ci.iloc[i].ice_plot
                     traces.append(go.Scatter(x=df_ci.iloc[i]['ice_x'],
@@ -449,12 +448,13 @@ class Explainer():
         s = f'<br>Prediction: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{pred:0.2f}</span>\t             '
         s += f'Uncertainty: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{uncertainty:0.2f}</span>'
         if hasattr(self, 'preds'):
-            perc_pred = int(stats.percentileofscore(self.preds, pred))
-            perc_uncertainty = int(stats.percentileofscore(self.uncertainties, uncertainty))
+            pred_norm = pred if not mult_100 else pred / 100
+            unc_norm = uncertainty if not mult_100 else uncertainty / 100
+            perc_pred = int(stats.percentileofscore(self.preds, pred_norm))
+            perc_uncertainty = int(stats.percentileofscore(self.uncertainties, unc_norm))
             s += f'<br><span style="color:gray;font-size:13px">Perc. {perc_pred:d}</span>\t                                   '
             s += f'<span style="color:gray;font-size:13px">Perc. {perc_uncertainty:d}</span>'
         s += f'<br>\t <span style="font-weight:italic;font-size:15px">Point ID: {point_id}</span><br>'
-        print('s', s)
         fig.layout.update({
             'title': s,
             'height': 800
