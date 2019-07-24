@@ -49,7 +49,7 @@ class Explainer():
             from scipy.stats import gaussian_kde
             self.kde = gaussian_kde(X.T)
             
-    def explain_instance(self, x, pred_func, class_num=None, return_table=False):
+    def explain_instance(self, x, pred_func, class_num=1, return_table=False):
         """Explain the instance x.
 
         Parameters
@@ -66,7 +66,7 @@ class Explainer():
             
         """
         scores = pd.concat(
-            [pd.Series(self.explain_instance_feature(x, pred_func, feature_num, class_num)) for feature_num in range(x.size)],
+            [pd.Series(self.explain_instance_feature(x, pred_func, feature_num=feature_num, class_num=class_num)) for feature_num in range(x.size)],
             axis=1
         ).transpose().infer_objects()       
         
@@ -92,7 +92,7 @@ class Explainer():
             return scores
     
         
-    def explain_instance_feature(self, x, pred_func, feature_name=None, feature_num=None, class_num=None):
+    def explain_instance_feature(self, x, pred_func, feature_name=None, feature_num=None, class_num=1):
         """Explain the instance x.
 
         Parameters
@@ -242,7 +242,7 @@ class Explainer():
         
         return float((yhat_plus - yhat) / delta_pos), float((yhat - yhat_minus) / delta_neg)
     
-    def viz_expl_feature(self, expl_dict, delta_plot=0.05, show=True):
+    def viz_expl_feature(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True):
         '''Visualize the ICE curve, prediction, and scores
         '''
 
@@ -282,6 +282,12 @@ class Explainer():
         else:
             plt.ylabel('model prediction')
 
+        # plot the interval lines
+        if interval_dicts is not None:
+            for i in range(len(interval_dicts)):
+                plt.plot(interval_dicts[i]['ice_plot'][0], 
+                         interval_dicts[i]['ice_plot'][1], color='gray', alpha=0.5)
+            
         if show:
             plt.show()
             
@@ -297,8 +303,6 @@ class Explainer():
                                                                                 'contribution': 'Contribution', 
                                                                                 'sensitivity': 'Sensitivity'})
         df = df.sort_values(by='feature_name')
-        
-        
         fig = ff.create_table(df_plot, height_constant=65)
 
         names = []

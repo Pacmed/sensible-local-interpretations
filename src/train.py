@@ -20,7 +20,7 @@ def train_models(X: np.ndarray, y: np.ndarray,
     models = []
     for class_weight in class_weights:
         if model_type == 'logistic':
-            m = LogisticRegression(solver='lbfgs', random_state=13, class_weight={0: 1, 1: class_weight})          
+            m = LogisticRegression(solver='lbfgs', class_weight={0: 1, 1: class_weight})          
         elif model_type == 'mlp2':
             m = MLPClassifier()
             X, y = resample(X, y, sample_type='over', class_weight=class_weight)
