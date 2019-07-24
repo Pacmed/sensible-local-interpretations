@@ -8,6 +8,7 @@ import seaborn as sns
 
 cred = (234/255, 51/255, 86/255)
 cblue = (57/255, 138/255, 242/255)
+cbluestr = 'rgb(57, 138, 242)'
 cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
 from visualize import background_gradient
 
@@ -417,11 +418,8 @@ class Explainer():
         
         point_id = 'Unknown'
         fig.layout.update({
-            'title': f'Prediction\tUncertainty\tPoint ID<br>{pred:0.2f}\t{uncertainty:0.2f}\t{point_id}',
+            'title': f'<br>Prediction: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{pred:0.2f}</span>\t             Uncertainty<span style="color:{cbluestr};font-weight:bold;font-size:40px">{uncertainty:0.2f}</span><br>\t <i>Point ID: {point_id}</i>',
             'height': 800,
-#             'annotations': [dict(text='GHG', x=0.3, y=0.95, 
-#                                  xref="paper", yref="paper")]
-#                             dict(text='CO2', x=0.82, y=0.5)]
         })
 
         # fig.layout.template = 'plotly_dark'
