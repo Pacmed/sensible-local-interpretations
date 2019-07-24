@@ -308,20 +308,9 @@ class Explainer():
                                         'contribution': 'Contribution', 
                                         'sensitivity': 'Sensitivity'})
         
-        '''
-        x = ['Product A', 'Product B', 'Product C']
-        y = [20, 14, 23]
-
-        # Use textposition='auto' for direct text
-        fig = make_subplots(rows=1, cols=2)
-        
-        fig = go.Figure(data=[go.Bar(
-                    x=x, y=y,
-                    text=y,
-                    textposition='auto',
-                )])
-        '''
-        fig = ff.create_table(df_tab, height_constant=20)
+        fig = ff.create_table(df_tab)
+        pred = float(expl_dict['pred'][0])
+        uncertainty = -1
         
         
         # interval dicts initialize
@@ -330,6 +319,7 @@ class Explainer():
             df_ci0 = pd.DataFrame(interval_dicts[0]).sort_values(by='feature_name')
             df_ci1 = pd.DataFrame(interval_dicts[1]).sort_values(by='feature_name')
             num_traces_per_plot = 5
+            uncertainty = np.abs(float(interval_dicts[0]['pred'][0]) - float(interval_dicts[1]['pred'][0]))
 
         # add a bunch of scatter plots
         traces = []
@@ -393,7 +383,6 @@ class Explainer():
             visible[num_traces_per_plot * i + table_offset: num_traces_per_plot * (i + 1) + table_offset] = True            
             buttons.append(
                 dict(
-#                     active=name==df_tab.Feature[0],
                     method='restyle',
                     args=[{'visible': visible}],
                     label=name
@@ -405,7 +394,6 @@ class Explainer():
         
         
         fig.layout.updatemenus = [go.layout.Updatemenu(
-#             list([
             dict(
                 active=int(np.argmax(df.feature_name.values == df_tab.Feature[0])),
                 buttons=buttons,
@@ -413,30 +401,28 @@ class Explainer():
                 y=-0.08,
                 direction='up'
             )
-#             ])
         )]
-        '''
-        fig.layout.updatemenus = list([
-                dict(
-                    buttons=buttons,
-                    x=0.8, # this is fraction of entire screen
-                    y=-0.08,
-                    direction='up'
-                )
-            ])
-        '''
         
         # Edit layout for subplots
         fig.layout.xaxis.update({'domain': [0, .5]})
         fig.layout.xaxis2.update({'domain': [0.6, 1.]})
 
         # The graph's yaxis MUST BE anchored to the graph's xaxis
-        fig.layout.yaxis2.update({'anchor': 'x2'})
+        fig.layout.yaxis.update({'domain': [0, .9]})
+        fig.layout.yaxis2.update({'domain': [0, .9], 'anchor': 'x2', })
         fig.layout.yaxis2.update({'title': 'Model prediction'})
 
         # Update the margins to add a title and see graph x-labels.
         fig.layout.margin.update({'t':50, 'b':100})
-        fig.layout.update({'title': 'Interpreting one data point'})
+        
+        point_id = 'Unknown'
+        fig.layout.update({
+            'title': f'Prediction\tUncertainty\tPoint ID<br>{pred:0.2f}\t{uncertainty:0.2f}\t{point_id}',
+            'height': 800,
+#             'annotations': [dict(text='GHG', x=0.3, y=0.95, 
+#                                  xref="paper", yref="paper")]
+#                             dict(text='CO2', x=0.82, y=0.5)]
+        })
 
         # fig.layout.template = 'plotly_dark'
         plot(fig, filename=filename, config={'showLink': False, 
