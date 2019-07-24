@@ -5,16 +5,19 @@ from copy import deepcopy
 import pandas as pd
 import time, sys, os
 import seaborn as sns
+from scipy import stats
 
 cred = (234/255, 51/255, 86/255)
 cblue = (57/255, 138/255, 242/255)
+credstr ='rgb(234, 51, 86)'
 cbluestr = 'rgb(57, 138, 242)'
 cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
 from visualize import background_gradient
 
 class Explainer():
     
-    def __init__(self, X, feature_names=None, mode='classification', strategy='independent', target_name=None):
+    def __init__(self, X, feature_names=None, 
+                 mode='classification', strategy='independent', target_name=None):
         """Initialize the explainer.
 
         Parameters
@@ -143,7 +146,8 @@ class Explainer():
         sensitivity_pos, sensitivity_neg = self.calc_sensitivity(x, f, feature_num)
         
         plot_dict = {
-            'ice_plot': (x_grid, ice_grid),
+            'ice_x': x_grid,
+            'ice_y': ice_grid,
             'x_feat': float(x[:, feature_num]),
             'pred': f(x),
             'feature_name': self.feature_names[feature_num],
@@ -243,6 +247,23 @@ class Explainer():
         
         return float((yhat_plus - yhat) / delta_pos), float((yhat - yhat_minus) / delta_neg)
     
+    
+    def calc_percentiles(self, m, m1, m2):
+        
+        # wrap function for classification
+        def f(m, x):
+            if self.mode == 'classification':
+                return m(x)[:, 1]
+            else:
+                return m(x)
+            
+        preds = []
+        for pred_func in [m, m1, m2]:
+            preds.append(f(pred_func, self.X))
+        self.preds = preds[0]
+        self.uncertainties = np.abs(preds[1] - preds[2])
+    
+    
     def viz_expl_feature(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True):
         '''Visualize the ICE curve, prediction, and scores
         '''
@@ -250,7 +271,7 @@ class Explainer():
         x_f = expl_dict['x_feat']
         yhat = expl_dict['pred']
         plt.plot(x_f, yhat, 'o', color='black', ms=8)
-        plt.plot(expl_dict['ice_plot'][0], expl_dict['ice_plot'][1], color='black')
+        plt.plot(expl_dict['ice_x'], expl_dict['ice_y'], color='black')
 
 
         def cs(score): return cblue if score > 0 else cred
@@ -286,18 +307,22 @@ class Explainer():
         # plot the interval lines
         if interval_dicts is not None:
             for i in range(len(interval_dicts)):
-                plt.plot(interval_dicts[i]['ice_plot'][0], 
-                         interval_dicts[i]['ice_plot'][1], color='gray', alpha=0.5)
+                plt.plot(interval_dicts[i]['ice_x'], 
+                         interval_dicts[i]['ice_y'], color='gray', alpha=0.5)
             
         if show:
             plt.show()
             
-    def viz_expl(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True, filename='out.html'):
+    def viz_expl(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True, filename='out.html', mult_100=True):
         import plotly.graph_objs as go
         import plotly.figure_factory as ff
         from plotly.offline import plot
         
-        df = pd.DataFrame(expl_dict).round(decimals=3)
+        if mult_100:
+            for d in [expl_dict] + interval_dicts:
+                mult_100_dict(d)
+        
+        df = pd.DataFrame(expl_dict).round(decimals=2)
         df = df.sort_values(by='feature_name')
         
         # make table
@@ -327,14 +352,15 @@ class Explainer():
         for i in range(df.shape[0]):
             row = df.iloc[i]
             name = row.feature_name
-            ice_x, ice_y = row.ice_plot
+            # ice_x, ice_y = row.ice_plot
             
             # plot ice curve
-            traces.append(go.Scatter(x=ice_x,
-                            y=ice_y,
+            traces.append(go.Scatter(x=row.ice_x,
+                            y=row.ice_y,
                             showlegend=False,
                             visible= name == df_tab.Feature[0],
                             name='ICE curve',
+                            line=dict(color=credstr),
                             xaxis='x2', yaxis='y2'))
 
             # plot pred
@@ -343,6 +369,7 @@ class Explainer():
                             mode='markers',
                             marker=dict(
                                 size=20,
+                                color='black'
                             ),
                             showlegend=False,
                             name='prediction',
@@ -351,7 +378,7 @@ class Explainer():
             
             # plot expectation line
             expectation_line_val = float(row.pred - row.contribution)
-            traces.append(go.Scatter(x=[np.min(ice_x), np.max(ice_x)],
+            traces.append(go.Scatter(x=[np.min(row.ice_x), np.max(row.ice_x)],
                             y=[expectation_line_val, expectation_line_val], 
                             line=dict(color='gray', width=4, dash='dash'),
                             opacity=0.5,
@@ -361,10 +388,11 @@ class Explainer():
             
             # plot interval lines
             if interval_dicts is not None:
+                # print('idicts', interval_dicts)
                 for df_ci in [df_ci0, df_ci1]:
-                    x, y = df_ci.iloc[i].ice_plot
-                    traces.append(go.Scatter(x=x,
-                                y=y,
+                    # x, y = df_ci.iloc[i].ice_plot
+                    traces.append(go.Scatter(x=df_ci.iloc[i]['ice_x'],
+                                y=df_ci.iloc[i]['ice_y'],
                                 showlegend=False,
                                 line=dict(color='gray', width=3),
                                 visible= name == df_tab.Feature[0],
@@ -417,9 +445,19 @@ class Explainer():
         fig.layout.margin.update({'t':50, 'b':100})
         
         point_id = 'Unknown'
+        
+        s = f'<br>Prediction: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{pred:0.2f}</span>\t             '
+        s += f'Uncertainty: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{uncertainty:0.2f}</span>'
+        if hasattr(self, 'preds'):
+            perc_pred = int(stats.percentileofscore(self.preds, pred))
+            perc_uncertainty = int(stats.percentileofscore(self.uncertainties, uncertainty))
+            s += f'<br><span style="color:gray;font-size:13px">Perc. {perc_pred:d}</span>\t                                   '
+            s += f'<span style="color:gray;font-size:13px">Perc. {perc_uncertainty:d}</span>'
+        s += f'<br>\t <span style="font-weight:italic;font-size:15px">Point ID: {point_id}</span><br>'
+        print('s', s)
         fig.layout.update({
-            'title': f'<br>Prediction: <span style="color:{cbluestr};font-weight:bold;font-size:40px">{pred:0.2f}</span>\t             Uncertainty<span style="color:{cbluestr};font-weight:bold;font-size:40px">{uncertainty:0.2f}</span><br>\t <i>Point ID: {point_id}</i>',
-            'height': 800,
+            'title': s,
+            'height': 800
         })
 
         # fig.layout.template = 'plotly_dark'
@@ -431,3 +469,11 @@ class Explainer():
                                              'showEditInChartStudio': False,
                                              'displaylogo': False
                                             }) 
+
+        
+def mult_100_dict(d):
+    d['pred'] *= 100
+    d['sensitivity_neg'] *= 100
+    d['sensitivity_pos'] *= 100
+    d['contribution'] *= 100
+    d['ice_y'] *= 100
