@@ -6,13 +6,19 @@ partition = 'high'
 
 # sweep different ways to initialize weights
 from dset_names import dset_names
-dset_nums = range(0, 75) # len 94
+dset_nums = range(11, 75) # len 94
+class_weights = [2, 5, 10, 100]
+
+
+
 
 # run
 s = Slurm("pmlb", {"partition": partition, "time": "1-0", "mem": "MaxMemPerNode"})
 
 # iterate
-for i in dset_nums:
-    param_str = 'module load python; python3 /accounts/projects/vision/chandan/class-weight-uncertainty/experiments/sweep_pmlb/fit.py dset_name '
-    param_str += str(dset_names[i])
-    s.run(param_str)
+for class_weight in class_weights:
+    for i in dset_nums:
+        param_str = 'module load python; python3 /accounts/projects/vision/chandan/class-weight-uncertainty/experiments/sweep_pmlb/fit.py '
+        param_str += 'dset_name ' + str(dset_names[i]) + ' '
+        param_str += 'class_weight ' + str(class_weight)
+        s.run(param_str)

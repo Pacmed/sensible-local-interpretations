@@ -60,8 +60,12 @@ def get_scores(uncertainty, flipped, y, preds):
     prob_pred = np.nan
     prob_true = np.nan
     calibration_rmse = np.nan   
+    ranks = np.nan
     
     try:
+        # ranks
+        ranks = np.argsort(uncertainty)
+        
         # flipped scores
         flipped_diff = np.mean(uncertainty[flipped]) - np.mean(uncertainty[~flipped])
         t, flipped_diff_p = ttest_ind(uncertainty[flipped], uncertainty[~flipped])
@@ -95,7 +99,8 @@ def get_scores(uncertainty, flipped, y, preds):
         'auc_auc': auc_auc,
         'calibration_pred': prob_pred,
         'calibration_true': prob_true,
-        'calibration_rmse': calibration_rmse
+        'calibration_rmse': calibration_rmse,
+        'ranks': ranks
     }
 
     

@@ -12,7 +12,7 @@ class p:
     
 
     # saving ########
-    out_dir = '/scratch/users/vision/chandan/pacmed/flips/' + model_type # directory for saving
+    out_dir = '/scratch/users/vision/chandan/pacmed/flips/' + 'logistic_stability' # directory for saving
 
     # exporting ########
     pid = ''.join(["%s" % randint(0, 9) for num in range(0, 20)])
