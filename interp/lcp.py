@@ -69,6 +69,9 @@ class Explainer():
             Array of values same shape as x with importance score for each feature.
             
         """
+        if x.ndim == 1:
+            x = x.reshape(1, -1)
+        
         scores = pd.concat(
             [pd.Series(self.explain_instance_feature(x, pred_func, feature_num=feature_num, class_num=class_num)) for feature_num in range(x.size)],
             axis=1
@@ -166,6 +169,10 @@ class Explainer():
     def calc_ice_grid(self, x, pred_func, feature_num, num_grid_points=100):
         """Calculate the ICE curve for this x by evaluating an evenly-spaced grid
         """
+        
+        if x.ndim == 1:
+            x = x.reshape(1, -1)
+        
         # get evenly spaced gridgrid
         X_new = np.repeat(x, num_grid_points, axis=0)    
         X_new[:, feature_num] = np.linspace(self.min_vals[feature_num], self.max_vals[feature_num], num_grid_points)

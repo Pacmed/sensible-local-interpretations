@@ -17,7 +17,6 @@ def resample(X, y, sample_type='over', class_weight=1.0, num_reps=1):
     
     '''
     
-    
     # figure out what ratio we want
     class0 = np.sum(y==0)
     class1 = np.sum(y==1)
