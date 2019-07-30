@@ -5,11 +5,9 @@
 
 This project aims to provide a way to interpret individual predictions made by a model in terms of 3 things: (1) uncertainty, (2) contribution, and (3) sensitivity. The methods here are model-agnostic and fast.
 
-![](results/illustrate/illustration.jpg)
+![](results/illustrate/illustration.png)
 
-The outcome allows for an interactive exploration of how a model makes its prediction:
-
-http://htmlpreview.github.io/?https://github.com/csinva/class-weight-uncertainty/results/interp/out_breast_cancer.html
+The outcome allows for an interactive exploration of how a model makes its prediction.
 
 # uncertainty
 
@@ -23,5 +21,6 @@ http://htmlpreview.github.io/?https://github.com/csinva/class-weight-uncertainty
 
 
 # sensitivity
+
 - what is the outcome of changing this feature?
 
