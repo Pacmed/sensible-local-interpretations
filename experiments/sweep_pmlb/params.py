@@ -7,12 +7,12 @@ class p:
     
     seed = 0 # random seed  
     class_weight = 2 # weighting for positive class
-    model_type = 'mlp2' # logistic, mlp2, rf, gb
+    model_type = 'rf' # logistic, mlp2, rf, gb
     flip_frac = 0 # 0.08
     
 
     # saving ########
-    out_dir = '/scratch/users/vision/chandan/pacmed/flips/mlp2_stability' # directory for saving
+    out_dir = '/scratch/users/vision/chandan/pacmed/no_flips/' + model_type # directory for saving
 
     # exporting ########
     pid = ''.join(["%s" % randint(0, 9) for num in range(0, 20)])

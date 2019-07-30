@@ -6,8 +6,9 @@ partition = 'high'
 
 # sweep different ways to initialize weights
 from dset_names import dset_names
-dset_nums = range(0, 10) # len 94
-class_weights = [2, 5, 10, 100]
+dset_nums = range(0, 94) # len 94
+# class_weights = [2, 5, 10, 100]
+class_weights = [2]
 
 
 

@@ -1,5 +1,8 @@
 # class weight uncertainty
 
+
+*Note: this repo is actively maintained. For any questions please file an issue.*
+
 ## todo
 
 - compare w/ asymmetric entropy
