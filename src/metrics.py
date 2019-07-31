@@ -9,7 +9,7 @@ from sklearn.metrics import auc
 from sklearn.calibration import calibration_curve
 
 
-def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, suffix='train'):
+def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped=None, suffix='train'):
     '''Get metrics to evaluate the class-weight uncertainty.
 
     Parameters
@@ -28,6 +28,9 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
     
     '''
     
+    if flipped is None:
+        flipped = np.zeros(y.size, dtype=np.bool)
+    
     # calculate uncertainties
     uncertainty_probit = np.abs(preds_confident - preds_diffident)
 
@@ -44,7 +47,7 @@ def get_metrics(preds_diffident, preds_canonical, preds_confident, y, flipped, s
     
 #     print(f'uncertainty flipped: {np.mean(uncertainties_probit[~flipped]):0.2f} unflipped: {np.mean(uncertainties_probit[~flipped])}')
 #     print(f'uncertainty flipped: {np.mean(uncertainty_entropy[~flipped]):0.2f} unflipped: {np.mean(uncertainty_entropy[~flipped])}')
-
+    scores_all['preds'] = preds_canonical
     return scores_all
     
 
@@ -100,7 +103,8 @@ def get_scores(uncertainty, flipped, y, preds):
         'calibration_pred': prob_pred,
         'calibration_true': prob_true,
         'calibration_rmse': calibration_rmse,
-        'ranks': ranks
+        'ranks': ranks,
+        'uncertainty': uncertainty
     }
 
     
