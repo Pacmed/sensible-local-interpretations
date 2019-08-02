@@ -1,7 +1,9 @@
-from matplotlib import cm
+# from matplotlib import cm
 from matplotlib.colors import rgb2hex
 import numpy as np
 import pandas as pd
+import seaborn as sns
+cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
     
 def background_gradient(self, cvals=None, cmin=None, cmax=None, cmap='viridis'):
     """For use with `DataFrame.style.apply` this function will apply a heatmap

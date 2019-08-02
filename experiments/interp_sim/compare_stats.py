@@ -40,9 +40,9 @@ def compare_stats(importances_true: np.ndarray, scores_dict: Dict[str, np.ndarra
 
         # magnitude correct
         ds[key] = {
-            'frac_intersect': frac_intersect,
-            'rank_corr': rank_corr,
-            'frac_correct_signs': frac_correct_signs
+            'Fraction Intersect': frac_intersect,
+            'Rank Corr': rank_corr,
+            'Fraction Correct Signs': frac_correct_signs
         }
         
     return ds # pd.DataFrame(ds).transpose()

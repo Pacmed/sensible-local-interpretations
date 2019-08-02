@@ -11,8 +11,7 @@ cred = (234/255, 51/255, 86/255)
 cblue = (57/255, 138/255, 242/255)
 credstr ='rgb(234, 51, 86)'
 cbluestr = 'rgb(57, 138, 242)'
-cm = sns.diverging_palette(10, 240, n=1000, as_cmap=True)
-from visualize import background_gradient
+from visualize import background_gradient, cm
 
 class Explainer():
     
