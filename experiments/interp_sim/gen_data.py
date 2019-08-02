@@ -5,7 +5,7 @@ from copy import deepcopy
 import pandas as pd
 import numpy.random as npr
 
-def gen_data(n=10, d=100, norm_beta=1, beta=None, var_eps=0.1, 
+def gen_gaussian_linear_data(n=10, d=100, norm_beta=1, beta=None, var_eps=0.1, 
              s=None, seed=1, shift_type='None', shift_val=0.1):
     '''Generate data
     n : int

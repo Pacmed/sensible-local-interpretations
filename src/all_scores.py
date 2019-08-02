@@ -1,6 +1,11 @@
 import shap, lime, lcp
 def get_scores(m, X_train, x):
     '''Get scores using shap, lime, and lcp
+    
+    Params
+    ------
+    m: regressor
+        m is a regrssor from sklearn
     '''
     feature_names = [f'x{i}' for i in range(X_train.shape[1])]
     
