@@ -58,6 +58,7 @@ def gen_gaussian_linear_data(n=10, d=100, norm_beta=1, beta=None, var_eps=0.1,
         
         # binomial distr (bernoulli response var)
         # n trials, probability p
-        y = np.random.binomial(n=n, p=pr)
+        z = np.random.uniform(size=n) # random number 0-1
+        y = (z <= pr).astype(np.int32)
 
     return x, y, beta
