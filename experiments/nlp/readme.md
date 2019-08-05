@@ -1,1 +1,3 @@
-note requires cloning pytorch-transformers
+- note requires cloning pytorch-transformers
+- run `train_sst.sh` to finetune BERT on SST-2
+- now, can get importance scores
