@@ -1,10 +1,12 @@
 from distutils.core import setup
+import setuptools
+
+with open("readme.md", "r") as fh:
+    long_description = fh.read()
 
 setup(
     name='sli',
     version='0.0.1',
-    packages=['sli',],
-    long_description=open('README.txt').read(),
     author="Chandan Singh",
     description="Sensible local interpretations",
     long_description=long_description,
