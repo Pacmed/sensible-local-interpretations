@@ -27,8 +27,8 @@ Install with `pip install git+https://github.com/csinva/sensible-local-interpret
 
 
 ```
-import sli
-explainer = lcp.Explainer(X, strategy=strategy)
+from sli import Explainer
+explainer = Explainer(X, strategy=strategy)
 expl_dict = explainer.explain_instance(x, models[1].predict_proba, return_table=False)
 explainer.viz_expl(expl_dict, filename='out.html')
 ```

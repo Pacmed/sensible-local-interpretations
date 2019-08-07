@@ -9,7 +9,7 @@ cred = (234/255, 51/255, 86/255)
 cblue = (57/255, 138/255, 242/255)
 credstr ='rgb(234, 51, 86)'
 cbluestr = 'rgb(57, 138, 242)'
-from visualize import background_gradient, cm
+from .visualize import background_gradient, cm
 
 class Explainer():
     
