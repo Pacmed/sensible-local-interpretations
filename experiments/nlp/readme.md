@@ -1,3 +1,4 @@
-- note requires cloning pytorch-transformers
+- note requires cloning [pytorch-transformers](https://github.com/huggingface/pytorch-transformers)
 - run `train_sst.sh` to finetune BERT on SST-2
 - now, can get importance scores
+- training logistic regression uses some code from [here](https://github.com/shayneobrien/sentiment-classification/blob/master/notebooks/03-logistic-regression.ipynb)
