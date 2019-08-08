@@ -25,11 +25,20 @@ The outcome allows for an interactive exploration of how a model makes its predi
 
 Install with `pip install git+https://github.com/csinva/sensible-local-interpretations`
 
+Given one trained model:
 
 ```
 from sli import Explainer
 explainer = Explainer(X, strategy=strategy)
-expl_dict = explainer.explain_instance(x, models[1].predict_proba, return_table=False)
+expl_dict = explainer.explain_instance(x, model.predict_proba, return_table=False)
 explainer.viz_expl(expl_dict, filename='out.html')
 ```
 
+Given a list of three models (with the best model in the middel of the list):
+
+```
+expl_dicts = [expl_dicts.append(explainer.explain_instance(x, models[i].predict_proba, 
+              class_num, return_table=False)) for i in range(3)]
+explainer.viz_expl(expl_dicts[1], [expl_dicts[0], expl_dicts[2]], 
+                   point_id='ID001', filename='out.html')
+```
