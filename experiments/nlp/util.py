@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import warnings
 
 def pred(s: str, tokenizer, clf, device='cpu'):
     '''Predict for a string given tokenizer and (returns class 1 - the positive class)
@@ -12,15 +13,36 @@ def pred(s: str, tokenizer, clf, device='cpu'):
 
 
 def predict_masked(masked_predictor, tokenizer,
-                   text="[CLS] This great movie was very good . [SEP] I thoroughly enjoyed it [SEP]",
-                   masked_index=6,
-                   device='cpu'):
+                   text: str="[CLS] This great movie was very good . [SEP] I thoroughly enjoyed it [SEP]",
+                   masked_index: int=None,
+                   masked_str: str=None,
+                   device: str='cpu'):
+    '''Predict what to fill in the text.
+    
+    Params
+    ------
+    masked_index
+        Index to mask. If not passed
+    
+    
+    '''
+    
+    # check arguments
+    if masked_index is None and masked_str is None:
+        raise ValueError('Must pass either an index or a string to mask')
+    elif masked_index is not None and masked_str is not None:
+        warnings.warn("Both masked_index and masked_str passed - using masked_str")
+        masked_index = None
+    
+    # tokenize the text
     tokenized_text = tokenizer.tokenize(text)
 
     # Mask a token that we will try to predict back with `BertForMaskedLM`
+    if masked_index is None:
+        masked_str = masked_str.lower()
+        masked_index = tokenized_text.index(masked_str)
     tokenized_text[masked_index] = '[MASK]'
-    assert tokenized_text == ['[CLS]', 'this', 'great', 'movie', 'was', 'very', '[MASK]', '.', 
-                              '[SEP]', 'i', 'thoroughly', 'enjoyed', 'it', '[SEP]']
+    
 
     # Convert token to vocabulary indices
     indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
