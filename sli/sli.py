@@ -317,7 +317,11 @@ class Explainer():
         if show:
             plt.show()
             
-    def viz_expl(self, expl_dict, interval_dicts=None, delta_plot=0.05, show=True, filename='out.html', mult_100=True, point_id=None):
+    def viz_expl(self, expl_dict, interval_dicts=None, filename='out.html',
+                 mult_100=True, point_id=None, show_stds=False):
+        '''Visualize explanation for all features (table + ICE curves) 
+        and save to filename
+        '''
         import plotly.graph_objs as go
         import plotly.figure_factory as ff
         from plotly.offline import plot
@@ -331,6 +335,15 @@ class Explainer():
         
         # make table
         df_tab = df[['feature_name', 'x_feat', 'contribution', 'sensitivity']]
+        if interval_dicts is not None and show_stds:
+            df_tab['Contribution S.D.'] = np.vstack((expl_dict['contribution'].values, 
+                                          interval_dicts[0]['contribution'].values,
+                                          interval_dicts[1]['contribution'].values)).std(axis=0).round(decimals=2)
+            df_tab['Sensitivity S.D.'] = np.vstack((expl_dict['sensitivity'].values, 
+                                          interval_dicts[0]['sensitivity'].values,
+                                          interval_dicts[1]['sensitivity'].values)).std(axis=0).round(decimals=2)
+        
+        # sort and name table
         df_tab = df_tab.reindex(df_tab.contribution.abs().sort_values(ascending=False).index) # sort by contribution 
         #df_tab = df_tab.sort_values(by='contribution')
         df_tab = df_tab.rename(index=str, 

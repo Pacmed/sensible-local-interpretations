@@ -1,4 +1,4 @@
-    # sensible local interpretations
+# sensible local interpretations
 
 *Note: this repo is actively maintained. For any questions please file an issue.*
 
@@ -21,7 +21,7 @@ This project aims to provide a way to interpret individual predictions made by a
 
 ## usage
 
-The outcome allows for an interactive exploration of how a model makes its prediction. Demo: https://csinva.github.io/sensible-local-interpretations/results/interp/out_breast_cancer.html
+The outcome allows for an interactive exploration of how a model makes its prediction: [demo](https://csinva.github.io/sensible-local-interpretations/results/interp/out_breast_cancer.html). 
 
 Install with `pip install git+https://github.com/csinva/sensible-local-interpretations`
 
@@ -40,5 +40,7 @@ Given a list of three models (with the best model in the middel of the list):
 expl_dicts = [expl_dicts.append(explainer.explain_instance(x, models[i].predict_proba, 
               class_num, return_table=False)) for i in range(3)]
 explainer.viz_expl(expl_dicts[1], [expl_dicts[0], expl_dicts[2]], 
-                   point_id='ID001', filename='out.html')
+                   show_stds=True, # display stddevs for the feature importances
+                   point_id='', # display id of this point
+                   filename='out.html') # saves to fully-contained interactive html file
 ```
