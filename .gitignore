@@ -14,6 +14,7 @@ env
 **.idea
 *.pth
 **Icon*
+<<<<<<< HEAD
 **.html
 
 # Setuptools distribution folder.
@@ -24,3 +25,4 @@ env
 
 build
 .gitmodules
+data/
