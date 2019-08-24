@@ -189,20 +189,22 @@ def make_precision_accuracy_plot(outputs_val, preds, y_test):
     ax2.plot(range(0, 1 + int(outputs_val.shape[1] / 2)), accuracies)
     ax2.set_ylabel('Accuracy')
 
-    ax2.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom=False,      # ticks along the bottom edge are off
-        top=False,         # ticks along the top edge are off
-        labelbottom=False) # labels along the bottom edge are off
+#     ax2.tick_params(
+#         axis='x',          # changes apply to the x-axis
+#         which='both',      # both major and minor ticks are affected
+#         bottom=False,      # ticks along the bottom edge are off
+#         top=False,         # ticks along the top edge are off
+#         labelbottom=False) # labels along the bottom edge are off
 
-    ax1.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom=False,      # ticks along the bottom edge are off
-        top=False,         # ticks along the top edge are off
-        labelbottom=False) # labels along the bottom edge are off
-
+#     ax1.tick_params(
+#         axis='x',          # changes apply to the x-axis
+#         which='both',      # both major and minor ticks are affected
+#         bottom=False,      # ticks along the bottom edge are off
+#         top=False,         # ticks along the top edge are off
+#         labelbottom=False) # labels along the bottom edge are off
+    
+    ax1.set_xlabel('Model Combination')
+    
     ax1.grid(False)
     plt.grid(False)
 
