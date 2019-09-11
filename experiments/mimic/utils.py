@@ -3,7 +3,8 @@ import numpy as np
 import torch
 import pandas as pd
 import matplotlib.pyplot as plt
-from pacmagic_deeplearning.modeling.classifiers.bayesian.train_utils import make_performance_uncertainty_plot, cross_entropy
+# from pacmagic_deeplearning.modeling.classifiers.bayesian.train_utils import make_performance_uncertainty_plot, cross_entropy
+import seaborn as sns
 
 
 def get_weight_tensor_from_class_weights(y, class_weights: list):
@@ -18,9 +19,9 @@ def get_weight_tensor_from_class_weights(y, class_weights: list):
     return weights
 
 
-class NN(nn.Module):
+class NNDropout(nn.Module):
     def __init__(self, quantiles):
-        super(NN, self).__init__()
+        super(NNDropout, self).__init__()
         self.z = nn.Linear(44, 64)
         self.bn = nn.BatchNorm1d(64)
         self.quantile_preds = nn.ModuleList([nn.Linear(64, 1) for _ in range(len(quantiles))])
@@ -31,6 +32,19 @@ class NN(nn.Module):
         return [self.quantile_preds[i](z) for i in range(len(self.quantile_preds))]
     
     
+class NN(nn.Module):
+    def __init__(self, quantiles):
+        super(NN, self).__init__()
+        self.z = nn.Linear(44, 64)
+        self.dropout = nn.Dropout()
+        self.bn = nn.BatchNorm1d(64)
+        self.quantile_preds = nn.ModuleList([nn.Linear(64, 1) for _ in range(len(quantiles))])
+        
+    def forward(self, x):
+        z = self.drpoout(self.bn(self.z(x)))
+        
+        return [self.quantile_preds[i](z) for i in range(len(self.quantile_preds))]
+    
 
 def train(model, data, target, data_val, target_val, optimizer, quantiles, epsilon=1e-3):
     
@@ -38,6 +52,7 @@ def train(model, data, target, data_val, target_val, optimizer, quantiles, epsil
     patience = 0
     
     for epoch_idx in range(10000):
+        model.train()
         outputs = model(data)
         
         losses = [torch.nn.functional.binary_cross_entropy_with_logits(
@@ -52,6 +67,7 @@ def train(model, data, target, data_val, target_val, optimizer, quantiles, epsil
         loss.backward()
         optimizer.step()
         if epoch_idx % 10 == 0:
+            model.eval()
             outputs_val = model(data_val)
             losses_val = [torch.nn.functional.binary_cross_entropy_with_logits(
             outputs_val[i], 
@@ -76,6 +92,136 @@ def train(model, data, target, data_val, target_val, optimizer, quantiles, epsil
                     model.load_state_dict(torch.load('tmp.pth'))
                     return model 
                 
+
+def cross_entropy(y_true: np.array, y_score: np.array, n_labels: int = None,
+                  reduction: str = None) -> np.array:
+    """Calculate cross entropy between y_true and y_score
+    Parameters
+    ----------
+    y_true: np.array
+        Labels
+    y_score: np.array
+        Predictions
+    n_labels: int (optional)
+        Only needs to be set in multiclass case.
+    reduction: str
+        If and how the cross entropies should be reduced. Options: ['sum', 'mean']
+    Returns
+    -------
+    np.array
+        Cross entropy losses of the predictions
+    """
+    # Squeeze the array if possible.
+    try:
+        y_score = y_score.squeeze(axis=-1)
+    except ValueError:
+        pass
+
+    # If the array has 2 dimensions treat as single-class.
+    try:
+        if y_score.shape[1] == 2:
+            y_score = y_score[:, 1]
+    except IndexError:
+        pass
+
+    # Calculate binary cross entropy or multiclass cross entropy.
+    if len(y_score.shape) == 1:
+
+        if y_true.shape != y_score.shape:
+            raise ValueError("y_true shape not equal to y_score shape")
+
+        ce = -(y_true * np.log2(y_score + 1e-9) + (1 - y_true) * np.log2(1 - y_score + 1e-9))
+
+    else:
+        # One-hot encode y_true
+        y_true = np.eye(n_labels)[y_true]
+
+        if y_true.shape != y_score.shape:
+            raise ValueError("y_true shape not equal to y_score shape")
+
+        ce = -np.sum(y_true * np.log2(y_score + 1e-9), axis=-1)
+
+    # Apply reduction.
+    if reduction == 'sum':
+        return ce.sum()
+    if reduction == 'mean':
+        return ce.mean()
+
+    return ce
+ 
+                
+def make_performance_uncertainty_plot(y_true: np.array,
+                                      y_pred: np.array,
+                                      y_unc: np.array,
+                                      y_axis_label: str,
+                                      performance_fn: callable = cross_entropy,
+                                      performance_fn_args: dict = None) -> plt.figure:
+    """Create plot how the uncertainty relates to model performance.
+    Parameters
+    ----------
+    y_true: np.array
+        True labels
+    y_pred: np.array
+        Predictions
+    y_unc: np.array
+        Uncertainties
+    y_axis_label: str
+        plot Y-axis label
+    performance_fn: callable
+        Performance function used
+    performance_fn_args: dict
+        Arguments passed to performance function
+    Returns
+    -------
+    plt.figure
+        Plot
+    """
+    try:
+        y_unc.squeeze(-1)
+
+    except ValueError:
+        pass
+
+    if y_unc.ndim == 2:
+        y_unc = y_unc.mean(-1)
+
+    elif y_unc.ndim > 2:
+        raise ValueError(f"Invalid uncertainty shape: {y_unc.shape}")
+
+    if y_true.ndim != 1:
+        raise ValueError("Y-true not one-dimensional")
+
+    # Placeholder
+    if performance_fn_args is None:
+        performance_fn_args = {}
+
+    order = y_unc.argsort()
+
+    sorted_uncertainties = y_unc[order]
+    sorted_labels = y_true[order]
+    sorted_predictions = y_pred[order]
+
+    # Get the first index where both 0's and 1's have occurred with at least a batch size of 64.
+    first_index = max(128,
+                      np.argwhere(sorted_labels != sorted_labels[0])[0][0])
+    performances = []
+    percentages = []
+
+    for i in range(first_index + 1, len(sorted_uncertainties)):
+        selected_labels = sorted_labels[:i]
+        selected_predictions = sorted_predictions[:i]
+
+        percentages.append(100 * len(selected_predictions) / len(y_pred))
+
+        performances.append(performance_fn(selected_labels, selected_predictions,
+                                           **performance_fn_args))
+
+    fig = plt.figure()
+    sns.lineplot(percentages, performances)
+    plt.xlabel('% of Uncertain Data')
+    plt.ylabel(y_axis_label)
+    return fig
+
                 
                 
 def plot_calibration_curve(y_true, y_prob,
@@ -189,20 +335,22 @@ def make_precision_accuracy_plot(outputs_val, preds, y_test):
     ax2.plot(range(0, 1 + int(outputs_val.shape[1] / 2)), accuracies)
     ax2.set_ylabel('Accuracy')
 
-    ax2.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom=False,      # ticks along the bottom edge are off
-        top=False,         # ticks along the top edge are off
-        labelbottom=False) # labels along the bottom edge are off
+#     ax2.tick_params(
+#         axis='x',          # changes apply to the x-axis
+#         which='both',      # both major and minor ticks are affected
+#         bottom=False,      # ticks along the bottom edge are off
+#         top=False,         # ticks along the top edge are off
+#         labelbottom=False) # labels along the bottom edge are off
 
-    ax1.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom=False,      # ticks along the bottom edge are off
-        top=False,         # ticks along the top edge are off
-        labelbottom=False) # labels along the bottom edge are off
-
+#     ax1.tick_params(
+#         axis='x',          # changes apply to the x-axis
+#         which='both',      # both major and minor ticks are affected
+#         bottom=False,      # ticks along the bottom edge are off
+#         top=False,         # ticks along the top edge are off
+#         labelbottom=False) # labels along the bottom edge are off
+    
+    ax1.set_xlabel('Model Combination')
+    
     ax1.grid(False)
     plt.grid(False)
 
@@ -280,3 +428,60 @@ class MCDropout(nn.Module):
             x = input_tensor
         output_tensor: torch.Tensor = self.f(x)
         return [output_tensor]
+
+    
+def train_baseline(model, optimizer, loss_fn, train_loader, test_data, test_labels):
+    
+    best_val_loss = np.inf
+    patience = 0
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    for epoch in range(512):
+        
+        # Train loop.
+        model = model.to(device)
+        model.train()
+        
+        train_loss = 0
+        for data, target in train_loader:
+            
+            data = data.to(device)
+            target = target.to(device)
+                        
+            outputs = model(data)
+            loss = loss_fn(outputs, target)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            train_loss += loss.item()
+            
+        train_loss /= len(train_loader) 
+            
+        # Validation.
+        model.eval()
+        model.to('cpu')
+        outputs_val = model(test_data)
+        val_loss = loss_fn(outputs_val, test_labels)
+        
+        print(f"Epoch {epoch} \t Validation loss: {val_loss.item():.2f}, Train loss: {train_loss:.2f}")
+        
+        if val_loss.item() < best_val_loss - 1e-4:
+                best_val_loss = val_loss.item()
+                patience = 0
+                torch.save(model.state_dict(), 'tmp.pth')
+        else:
+            patience += 1
+
+            if patience == 8:
+                model.load_state_dict(torch.load('tmp.pth'))
+                return model 
+            
+            
+def accuracy(model, val_data, val_target):
+    model_outputs = model(val_data)
+    predictions = torch.argmax(model_outputs, dim=-1)
+    accuracy = (predictions == val_target).mean()
+    print(f"Accuracy: {100 * accuracy:.2f}")
