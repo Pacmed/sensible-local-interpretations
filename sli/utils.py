@@ -213,11 +213,11 @@ def make_performance_uncertainty_plot(y_true: np.array,
     """
     
     percentages, performances = get_performance_vs_uncertainty(y_true, y_pred, y_unc, y_axis_label, performance_fn, performance_fn_args)
-    fig = plt.figure()
+    # fig = plt.figure()
     sns.lineplot(percentages, performances)
     plt.xlabel('% of Uncertain Data')
     plt.ylabel(y_axis_label)
-    return fig
+    # return fig
 
 
 def get_performance_metrics(y_true: np.array,

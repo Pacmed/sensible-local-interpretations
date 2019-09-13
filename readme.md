@@ -47,7 +47,7 @@ Given a list of three models (with the best model in the middel of the list):
 
 ```
 from sli import Explainer
-explainer = sli.Explainer(X_train, feature_names=feature_names)
+explainer = Explainer(X_train, feature_names=feature_names)
 explainer.calc_percentiles(models[0].predict_proba, models[1].predict_proba, 
                            models[2].predict_proba)
 expl_dicts = [expl_dicts.append(explainer.explain_instance(x, models[i].predict_proba, 

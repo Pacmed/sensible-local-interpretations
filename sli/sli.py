@@ -253,6 +253,12 @@ class Explainer():
     
     
     def calc_percentiles(self, m, m1, m2):
+        '''Calculate percentiles for later visualization
+        m: canonical model
+        m1: underconfident
+        m2: overconfident
+        
+        '''
         
         # wrap function for classification
         def f(m, x):
