@@ -1,0 +1,4 @@
+ - in the filenames, 'weighing' refers to weighing the classes for the canonical model s.t. asymmetric entropy peaks at 0.5
+ - 'no_joint_training' implies that the models were not trained jointly
+ - dropout_no_weighing uses dropout at test time to calculate uncertainty (Bayesian)
+ - ours_no_weighing_no_joint_training uses our method on models (still w/ dropout during training) to calculate uncertainty
