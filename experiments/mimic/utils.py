@@ -41,7 +41,7 @@ class NN(nn.Module):
         self.quantile_preds = nn.ModuleList([nn.Linear(64, 1) for _ in range(len(quantiles))])
         
     def forward(self, x):
-        z = self.drpoout(self.bn(self.z(x)))
+        z = self.dropout(self.bn(self.z(x)))
         
         return [self.quantile_preds[i](z) for i in range(len(self.quantile_preds))]
     
