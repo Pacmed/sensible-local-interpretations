@@ -324,7 +324,7 @@ class Explainer():
             plt.show()
             
     def viz_expl(self, expl_dict, interval_dicts=None, filename='out.html',
-                 mult_100=True, point_id=None, show_stds=False):
+                 mult_100=True, point_id=None, show_stds=False, round=2):
         '''Visualize explanation for all features (table + ICE curves) 
         and save to filename
         '''
@@ -336,7 +336,7 @@ class Explainer():
             for d in [expl_dict] + interval_dicts:
                 mult_100_dict(d)
         
-        df = pd.DataFrame(expl_dict).round(decimals=2)
+        df = pd.DataFrame(expl_dict).round(decimals=round)
         df = df.sort_values(by='feature_name')
         
         # make table
@@ -344,10 +344,10 @@ class Explainer():
         if interval_dicts is not None and show_stds:
             df_tab['Contribution S.D.'] = np.vstack((expl_dict['contribution'].values, 
                                           interval_dicts[0]['contribution'].values,
-                                          interval_dicts[1]['contribution'].values)).std(axis=0).round(decimals=2)
+                                          interval_dicts[1]['contribution'].values)).std(axis=0).round(decimals=round)
             df_tab['Sensitivity S.D.'] = np.vstack((expl_dict['sensitivity'].values, 
                                           interval_dicts[0]['sensitivity'].values,
-                                          interval_dicts[1]['sensitivity'].values)).std(axis=0).round(decimals=2)
+                                          interval_dicts[1]['sensitivity'].values)).std(axis=0).round(decimals=round)
         
         # sort and name table
         df_tab = df_tab.reindex(df_tab.contribution.abs().sort_values(ascending=False).index) # sort by contribution 
