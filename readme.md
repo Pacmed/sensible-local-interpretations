@@ -23,7 +23,7 @@ This project aims to provide a way to interpret individual predictions made by a
 
 The outcome allows for an interactive exploration of how a model makes its prediction: [demo](https://csinva.github.io/sensible-local-interpretations/results/interp/out_breast_cancer.html). 
 
-Install with `pip install git+https://github.com/csinva/sensible-local-interpretations`
+Install with `pip install git+https://github.com/Pacmed/sensible-local-interpretations`
 
 Let 
 
