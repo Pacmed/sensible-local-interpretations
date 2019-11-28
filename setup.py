@@ -22,7 +22,8 @@ setup(
         'scipy',        
         'seaborn',
         'shap',
-        'tqdm'
+        'tqdm',
+        'lcp'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
